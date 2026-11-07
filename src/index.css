@@ -141,6 +141,10 @@
 
     body {
         margin: 0;
-        font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+        font-family:
+            "Segoe UI",
+            "Microsoft YaHei UI",
+            system-ui,
+            sans-serif;
     }
 }

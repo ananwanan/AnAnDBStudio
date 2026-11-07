@@ -6,6 +6,7 @@ import {
     useState,
     type ReactNode,
 } from "react";
+
 import {
     parseTheme,
     resolveTheme,
@@ -39,13 +40,13 @@ export function ThemeProvider({
         const root = document.documentElement;
         const media = window.matchMedia("(prefers-color-scheme: dark)");
 
-        const applyTheme = () => {
+        function applyTheme() {
             const resolved = resolveTheme(theme, media.matches);
 
             root.classList.toggle("dark", resolved === "dark");
             root.classList.toggle("light", resolved === "light");
             root.style.colorScheme = resolved;
-        };
+        }
 
         applyTheme();
 
@@ -55,12 +56,13 @@ export function ThemeProvider({
         }
     }, [theme]);
 
-    function setTheme(nextTheme: Theme) {
-        setThemeState(nextTheme);
+    function setTheme(next: Theme) {
+        setThemeState(next);
+
         try {
-            localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+            localStorage.setItem(THEME_STORAGE_KEY, next);
         } catch {
-            // The selected theme remains active for this session.
+            // Keep the theme active for the current session.
         }
     }
 
@@ -71,10 +73,12 @@ export function ThemeProvider({
     );
 }
 
-export function useTheme(): ThemeContextValue {
+export function useTheme() {
     const context = useContext(ThemeContext);
+
     if (!context) {
-        throw new Error("useTheme requires ThemeProvider");
+        throw new Error("useTheme must be used inside ThemeProvider");
     }
+
     return context;
 }
