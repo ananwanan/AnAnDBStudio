@@ -12,3 +12,16 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::greet;
+
+    #[test]
+    fn greet_returns_expected_message() {
+        assert_eq!(
+            greet("AnAnDB"),
+            "Hello, AnAnDB! You've been greeted from Rust!"
+        );
+    }
+}
