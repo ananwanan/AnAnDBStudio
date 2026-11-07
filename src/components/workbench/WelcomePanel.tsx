@@ -11,7 +11,7 @@ import {
 
 export function WelcomePanel() {
     return (
-        <main className="min-w-0 flex-1 overflow-auto bg-background p-6">
+        <main className="h-full min-h-0 min-w-0 overflow-auto bg-background p-6">
             <div className="mx-auto max-w-4xl space-y-6">
                 <div className="space-y-2">
                     <h1 className="text-2xl font-semibold tracking-tight">
