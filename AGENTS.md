@@ -9,7 +9,7 @@ This document defines repository-wide instructions for coding agents and contrib
 - Goal: a professional, cross-platform database management desktop application comparable in workflow ambition to Navicat and DBeaver.
 - Selected stack: **Tauri 2 + Rust (stable) + React + TypeScript + Vite**.
 - First supported database: **SQLite 3**. PostgreSQL and MySQL/MariaDB are planned for later milestones.
-- At documentation initialization (2026-11-07), the repository is **planning/documentation-only**. Do not assume the app, workspace, CI, dependency configuration, tests, or modules already exist.
+- Historical note: at documentation initialization (2026-11-07), the repository was **planning/documentation-only**. The current implementation status must be checked on the active branch; by 2026-11-08, M0.1–M0.3 were integrated into `dev` and M0.4 Dockview received owner-reported final acceptance on `feat/m0-dockview` (see `docs/acceptance/M0.4.md`). Do not assume later milestones are implemented.
 - `README.md` is the product/roadmap source of truth. Do not mark planned features as implemented without evidence.
 
 ## 2. Roadmap and task boundaries
@@ -166,6 +166,6 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 
 ## 9. Immediate next action
 
-**M0.1**: initialize the Tauri 2 / React / TypeScript / Vite shell, confirm a desktop window launches, and retain a clean, minimal structure ready for M0.2. Do not treat this documentation initialization as M0.1 completion.
+**M0.4 closeout → M0.5**: the owner reported the M0.4.5 final checklist passed on 2026-11-08. Review and integrate `feat/m0-dockview` into `dev` only after required PR/CI checks and documentation reconciliation. Then implement the smallest **M0.5 typed Tauri IPC and shared error-boundary contract**. Keep database CRUD and real drivers out of M0.5; use the milestone acceptance record for evidence and limitations.
 
 For the definitive scope and milestones, read [README.md](README.md).

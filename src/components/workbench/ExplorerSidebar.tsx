@@ -6,7 +6,7 @@ export function ExplorerSidebar() {
     return (
         <aside
             aria-label="数据库资源管理器"
-            className="flex w-56 shrink-0 flex-col border-r bg-muted/30"
+            className="flex h-full min-h-0 w-full flex-col bg-muted/30"
         >
             <div className="flex h-11 items-center gap-2 px-4">
                 <FolderTree className="size-4 text-muted-foreground" />

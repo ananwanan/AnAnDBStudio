@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-07）：M0 基础建设阶段。** Tauri 2 + React + TypeScript 工程已初始化；M0.2 Rust Workspace 与 Windows/Ubuntu CI 已通过自动验证，项目维护者报告本地 M0.2 测试完成。M0.2 在功能分支 `feat/m0-workspace-ci`，尚待 PR #1 审核合入 `dev`。SQLite 等业务功能仍未实现。`v0.1.0` 是计划中的 MVP，并非已发布版本。
+> **项目状态（2026-11-08）：M0 基础建设进行中，M0.4 Dockview 已获得维护者最终验收确认。** M0.1–M0.3 已进入 `dev`；M0.4 位于 `feat/m0-dockview`，维护者报告 M0.4.5 的 12 项验收全部通过，待 PR 复核与合并。验收结果及证据级别见 [M0.4 acceptance](docs/acceptance/M0.4.md)。下一阶段为 **M0.5 Typed Tauri IPC**。尚未实现真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 仍是计划中的 MVP，并非已发布版本。
 
 ## Product goals / 产品目标
 
@@ -131,7 +131,7 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | A minimal typed frontend-to-Rust command works |
 | **M0.6** | Startup, persistence, Windows/Linux acceptance | Repeatable smoke-test evidence documented |
 
-**Current progress (2026-11-07):** M0.1 scaffold committed; M0.2 local validation reported complete and Windows/Ubuntu CI passed ([acceptance evidence](docs/acceptance/M0.2.md), [PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1)). Merge the reviewed M0.2 branch into `dev` before starting **M0.3**. Do **not** implement SQLite CRUD or PostgreSQL during M0 just to enlarge the scope.
+**Current progress (2026-11-08):** M0.1–M0.3 changes are integrated into `dev` ([M0.2 PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [M0.3 PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2)). The project owner reports all 12 M0.4.5 acceptance checks passed on `feat/m0-dockview` ([M0.4 acceptance record](docs/acceptance/M0.4.md)); source-committed layout/active-state regression tests and linked M0.4 CI evidence remain follow-up documentation/hardening items. **M0.4 has not yet been merged into `dev`.** After PR review and required CI, proceed to **M0.5 — typed Tauri IPC**. Do **not** implement SQLite CRUD or PostgreSQL during M0.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +160,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Scaffolded application:** On a branch containing M0.1 (such as `dev`), install dependencies and launch the desktop shell. The Rust workspace, CI and other M0.2 changes are present on `feat/m0-workspace-ci` until merged.
+**Scaffolded application:** The Tauri/React shell and M0.2–M0.3 foundation are available on `dev`; use `feat/m0-dockview` for the accepted-but-not-yet-merged M0.4 docking workbench. Install dependencies and launch the desktop shell:
 
 ```powershell
 pnpm install
