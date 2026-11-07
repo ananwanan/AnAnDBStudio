@@ -7,9 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Frontend and Rust build outputs
 node_modules
 dist
 dist-ssr
+/target/
 *.local
 
 # Editor directories and files
