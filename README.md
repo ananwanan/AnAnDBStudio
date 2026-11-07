@@ -4,12 +4,12 @@
 >
 > 现代化、跨平台的专业数据库管理工具。
 
-[![Status](https://img.shields.io/badge/status-planning-blue)](#project-status)
+[![Status](https://img.shields.io/badge/status-M0%20in%20progress-blue)](#development-roadmap--开发路线)
 [![Desktop](https://img.shields.io/badge/desktop-Windows%20%7C%20Linux%20%7C%20macOS-informational)](#technical-stack)
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-07）：规划阶段。** 当前 README 描述的是技术决策、产品目标与计划，不代表功能已实现或测试通过。`v0.1.0` 是首个计划中的 MVP 版本，不是已发布版本。
+> **项目状态（2026-11-07）：M0 基础建设阶段。** Tauri 2 + React + TypeScript 工程已初始化；M0.2 Rust Workspace 与 Windows/Ubuntu CI 已通过自动验证，项目维护者报告本地 M0.2 测试完成。M0.2 在功能分支 `feat/m0-workspace-ci`，尚待 PR #1 审核合入 `dev`。SQLite 等业务功能仍未实现。`v0.1.0` 是计划中的 MVP，并非已发布版本。
 
 ## Product goals / 产品目标
 
@@ -131,7 +131,7 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | A minimal typed frontend-to-Rust command works |
 | **M0.6** | Startup, persistence, Windows/Linux acceptance | Repeatable smoke-test evidence documented |
 
-Start with **M0.1** and proceed incrementally. Do **not** implement SQLite CRUD or PostgreSQL during M0 just to enlarge the scope.
+**Current progress (2026-11-07):** M0.1 scaffold committed; M0.2 local validation reported complete and Windows/Ubuntu CI passed ([acceptance evidence](docs/acceptance/M0.2.md), [PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1)). Merge the reviewed M0.2 branch into `dev` before starting **M0.3**. Do **not** implement SQLite CRUD or PostgreSQL during M0 just to enlarge the scope.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +160,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**This repository is currently documentation-only.** The commands below become applicable **after M0.1 scaffolding**; they are not yet executable here.
+**Scaffolded application:** On a branch containing M0.1 (such as `dev`), install dependencies and launch the desktop shell. The Rust workspace, CI and other M0.2 changes are present on `feat/m0-workspace-ci` until merged.
 
 ```powershell
 pnpm install
