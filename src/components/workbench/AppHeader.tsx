@@ -78,7 +78,9 @@ export function AppHeader({
                 <div className="flex items-center gap-1 border-l pl-2">
                     <Button
                         size="sm"
-                        variant={activePanel === "explorer" ? "secondary" : "ghost"}
+                        className="shrink-0"
+                        variant={activePanel === "explorer" ? "default" : "ghost"}
+                        aria-pressed={activePanel === "explorer"}
                         disabled={!canResetLayout}
                         onClick={() => onOpenPanel("explorer")}
                         title="打开或激活 Explorer"
@@ -89,7 +91,8 @@ export function AppHeader({
 
                     <Button
                         size="sm"
-                        variant={activePanel === "welcome" ? "secondary" : "ghost"}
+                        variant={activePanel === "welcome" ? "default" : "ghost"}
+                        aria-pressed={activePanel === "welcome"}
                         disabled={!canResetLayout}
                         onClick={() => onOpenPanel("welcome")}
                         title="打开或激活 Welcome"
@@ -100,7 +103,8 @@ export function AppHeader({
 
                     <Button
                         size="sm"
-                        variant={activePanel === "results" ? "secondary" : "ghost"}
+                        variant={activePanel === "results" ? "default" : "ghost"}
+                        aria-pressed={activePanel === "results"}
                         disabled={!canResetLayout}
                         onClick={() => onOpenPanel("results")}
                         title="打开或激活 Results"

@@ -34,26 +34,54 @@ export default function App() {
   useWorkbenchShortcuts(dockApi);
 
   const [panelSnapshot, setPanelSnapshot] =
-    useState<PanelSnapshot>(EMPTY_SNAPSHOT);
+  useState<PanelSnapshot>(EMPTY_SNAPSHOT);
 
   useEffect(() => {
     if (!dockApi) return;
 
-    const update = () => {
+    // Synchronize panel presence after structural changes.
+    const refresh = () => {
       setPanelSnapshot(readPanelSnapshot(dockApi));
     };
 
-    update();
+    // Use the active panel supplied by the Dockview event.
+    const activeSubscription = dockApi.onDidActivePanelChange(
+      ({ panel, origin }) => {
+        const id = panel?.id;
 
-    const listeners = [
-      dockApi.onDidAddPanel(update),
-      dockApi.onDidRemovePanel(update),
-      dockApi.onDidActivePanelChange(update),
-      dockApi.onDidLayoutChange(update),
+        const active: WorkbenchPanelId | null =
+          id === "explorer" ||
+            id === "welcome" ||
+            id === "results"
+            ? id
+            : null;
+
+        setPanelSnapshot({
+          ...readPanelSnapshot(dockApi),
+          active,
+        });
+
+        console.debug("[Dockview] Active panel changed", {
+          active,
+          origin,
+          apiActive: dockApi.activePanel?.id,
+        });
+      },
+    );
+
+    const subscriptions = [
+      dockApi.onDidAddPanel(refresh),
+      dockApi.onDidRemovePanel(refresh),
+      dockApi.onDidLayoutFromJSON(refresh),
+      activeSubscription,
     ];
 
+    refresh();
+
     return () => {
-      listeners.forEach((listener) => listener.dispose());
+      subscriptions.forEach((subscription) => {
+        subscription.dispose();
+      });
     };
   }, [dockApi]);
 
