@@ -1,6 +1,14 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
+import {
+    IPC_PROTOCOL_VERSION,
+    type AppInfo,
+    type IpcCommandArgs,
+    type IpcCommandName,
+    type IpcCommandResult,
+} from "./ipc-contract";
+
 export type BackendErrorCode =
     | "INVALID_ARGUMENT"
     | "PROTOCOL_MISMATCH"
@@ -31,26 +39,27 @@ export class IpcError extends Error {
     }
 }
 
-interface BackendError {
-    code: BackendErrorCode;
-    message: string;
+function isRecord(
+    value: unknown,
+): value is Record<string, unknown> {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+    );
 }
 
-function isBackendError(value: unknown): value is BackendError {
-    if (
-        typeof value !== "object" ||
-        value === null ||
-        Array.isArray(value)
-    ) {
-        return false;
-    }
-
-    const record = value as Record<string, unknown>;
-
+function isBackendError(
+    value: unknown,
+): value is {
+    code: BackendErrorCode;
+    message: string;
+} {
     return (
-        typeof record.code === "string" &&
-        BACKEND_ERROR_CODES.has(record.code) &&
-        typeof record.message === "string"
+        isRecord(value) &&
+        typeof value.code === "string" &&
+        BACKEND_ERROR_CODES.has(value.code) &&
+        typeof value.message === "string"
     );
 }
 
@@ -60,11 +69,9 @@ export function normalizeIpcError(error: unknown): IpcError {
     }
 
     if (isBackendError(error)) {
-        return new IpcError(
-            error.code,
-            error.message,
-            { cause: error },
-        );
+        return new IpcError(error.code, error.message, {
+            cause: error,
+        });
     }
 
     return new IpcError(
@@ -74,19 +81,73 @@ export function normalizeIpcError(error: unknown): IpcError {
     );
 }
 
+// Decode an untrusted Rust response.
+function decodeAppInfo(response: unknown): AppInfo {
+    if (
+        !isRecord(response) ||
+        typeof response.appName !== "string" ||
+        typeof response.version !== "string" ||
+        typeof response.protocolVersion !== "number" ||
+        !Number.isInteger(response.protocolVersion)
+    ) {
+        throw new IpcError(
+            "INVALID_RESPONSE",
+            "Invalid get_app_info IPC response",
+        );
+    }
 
-export async function invokeIpc<T>(
-    command: string,
-    args?: Record<string, unknown>,
-): Promise<T> {
+    if (response.protocolVersion !== IPC_PROTOCOL_VERSION) {
+        throw new IpcError(
+            "PROTOCOL_MISMATCH",
+            "Unsupported IPC protocol version",
+        );
+    }
+
+    return {
+        appName: response.appName,
+        version: response.version,
+        protocolVersion: response.protocolVersion,
+    };
+}
+
+// Rust's unit type is serialized as null by Tauri.
+// Undefined is also accepted for mocked transports.
+function decodeVoid(response: unknown): void {
+    if (response !== null && response !== undefined) {
+        throw new IpcError(
+            "INVALID_RESPONSE",
+            "Invalid check_ipc_protocol IPC response",
+        );
+    }
+}
+
+// Every registered frontend command must have a decoder.
+const RESPONSE_DECODERS: {
+    [C in IpcCommandName]: (
+        value: unknown,
+    ) => IpcCommandResult<C>;
+} = {
+    get_app_info: decodeAppInfo,
+    check_ipc_protocol: decodeVoid,
+};
+
+export async function invokeIpc<C extends IpcCommandName>(
+    command: C,
+    ...args: IpcCommandArgs<C> extends undefined
+        ? []
+        : [args: IpcCommandArgs<C>]
+): Promise<IpcCommandResult<C>> {
     try {
-        if (args === undefined) {
-            return await invoke<T>(command);
-        }
+        const response: unknown =
+            args.length === 0
+                ? await invoke<unknown>(command)
+                : await invoke<unknown>(
+                    command,
+                    args[0] as Record<string, unknown>,
+                );
 
-        return await invoke<T>(command, args);
+        return RESPONSE_DECODERS[command](response);
     } catch (error: unknown) {
         throw normalizeIpcError(error);
     }
 }
-

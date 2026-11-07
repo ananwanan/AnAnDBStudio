@@ -1,6 +1,12 @@
 
 import { invoke } from "@tauri-apps/api/core";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 
 import {
     IpcError,
@@ -14,43 +20,117 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 const invokeMock = vi.mocked(invoke);
 
+const validAppInfo = {
+    appName: "AnAnDB Studio",
+    version: "0.1.0",
+    protocolVersion: 1,
+};
+
 beforeEach(() => {
     invokeMock.mockReset();
 });
 
-describe("IPC error contract", () => {
-    it("preserves structured backend errors", () => {
-        const error = normalizeIpcError({
+describe("typed IPC", () => {
+    it("decodes app info", async () => {
+        invokeMock.mockResolvedValue(validAppInfo);
+
+        await expect(
+            invokeIpc("get_app_info"),
+        ).resolves.toEqual(validAppInfo);
+
+        expect(invokeMock).toHaveBeenCalledExactlyOnceWith(
+            "get_app_info",
+        );
+    });
+
+    it("passes typed command arguments", async () => {
+        invokeMock.mockResolvedValue(null);
+
+        await expect(
+            invokeIpc("check_ipc_protocol", {
+                protocolVersion: 1,
+            }),
+        ).resolves.toBeUndefined();
+
+        expect(invokeMock).toHaveBeenCalledWith(
+            "check_ipc_protocol",
+            { protocolVersion: 1 },
+        );
+    });
+
+    it("rejects invalid response shapes", async () => {
+        invokeMock.mockResolvedValue({
+            appName: "AnAnDB Studio",
+            version: 123,
+            protocolVersion: 1,
+        });
+
+        await expect(
+            invokeIpc("get_app_info"),
+        ).rejects.toMatchObject({
+            code: "INVALID_RESPONSE",
+        });
+    });
+
+    it("rejects unsupported versions", async () => {
+        invokeMock.mockResolvedValue({
+            ...validAppInfo,
+            protocolVersion: 2,
+        });
+
+        await expect(
+            invokeIpc("get_app_info"),
+        ).rejects.toMatchObject({
             code: "PROTOCOL_MISMATCH",
-            message: "Unsupported IPC protocol version",
+        });
+    });
+
+    it("rejects unexpected unit responses", async () => {
+        invokeMock.mockResolvedValue({ unexpected: true });
+
+        await expect(
+            invokeIpc("check_ipc_protocol", {
+                protocolVersion: 1,
+            }),
+        ).rejects.toMatchObject({
+            code: "INVALID_RESPONSE",
+        });
+    });
+
+    it("preserves backend errors", async () => {
+        invokeMock.mockRejectedValue({
+            code: "INVALID_ARGUMENT",
+            message: "Invalid request",
         });
 
-        expect(error).toBeInstanceOf(IpcError);
-        expect(error.code).toBe("PROTOCOL_MISMATCH");
-        expect(error.message).toBe(
-            "Unsupported IPC protocol version",
-        );
+        await expect(
+            invokeIpc("get_app_info"),
+        ).rejects.toMatchObject({
+            code: "INVALID_ARGUMENT",
+            message: "Invalid request",
+        });
     });
 
-    it("normalizes unknown errors", () => {
-        const error = normalizeIpcError("Unexpected failure");
+    it("normalizes unknown failures", async () => {
+        invokeMock.mockRejectedValue("Unexpected failure");
 
-        expect(error.code).toBe("TRANSPORT_ERROR");
-        expect(error.message).toBe(
-            "Cannot communicate with Rust backend",
-        );
+        await expect(
+            invokeIpc("get_app_info"),
+        ).rejects.toMatchObject({
+            code: "TRANSPORT_ERROR",
+        });
     });
 
-    it("rejects unknown backend error codes", () => {
+    it("does not accept unknown backend codes", () => {
         const error = normalizeIpcError({
-            code: "SOME_UNKNOWN_ERROR",
-            message: "Unexpected response",
+            code: "UNKNOWN_CODE",
+            message: "Error",
         });
 
         expect(error.code).toBe("TRANSPORT_ERROR");
     });
 
-    it("preserves existing IPC errors", () => {
+    it("preserves existing IpcError instances", () => {
         const original = new IpcError(
             "INVALID_RESPONSE",
             "Bad response",
@@ -58,36 +138,23 @@ describe("IPC error contract", () => {
 
         expect(normalizeIpcError(original)).toBe(original);
     });
-
-    it("returns successful command results", async () => {
-        invokeMock.mockResolvedValue({ ok: true });
-
-        await expect(
-            invokeIpc<{ ok: boolean }>("test_command"),
-        ).resolves.toEqual({ ok: true });
-    });
-
-    it("converts rejected commands into IpcError", async () => {
-        invokeMock.mockRejectedValue({
-            code: "INVALID_ARGUMENT",
-            message: "Invalid request",
-        });
-
-        await expect(
-            invokeIpc("test_command"),
-        ).rejects.toMatchObject({
-            code: "INVALID_ARGUMENT",
-            message: "Invalid request",
-        });
-    });
-
-    it("does not pass arguments to parameterless commands", async () => {
-        invokeMock.mockResolvedValue({ ok: true });
-
-        await invokeIpc("get_app_info");
-
-        expect(invokeMock).toHaveBeenCalledExactlyOnceWith(
-            "get_app_info",
-        );
-    });
 });
+
+// Compile-time contract assertions; this function is not executed.
+function assertCommandTypes(): void {
+    // @ts-expect-error Unknown command must be rejected.
+    void invokeIpc("unknown_command");
+
+    // @ts-expect-error This command requires arguments.
+    void invokeIpc("check_ipc_protocol");
+
+    // @ts-expect-error Parameterless command rejects arguments.
+    void invokeIpc("get_app_info", { value: 1 });
+
+    void invokeIpc("check_ipc_protocol", {
+        // @ts-expect-error Protocol version must be a number.
+        protocolVersion: "1",
+    });
+}
+
+void assertCommandTypes;
