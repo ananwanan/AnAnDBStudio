@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M0 基础建设进行中，M0.4 Dockview 已获得维护者最终验收确认。** M0.1–M0.3 已进入 `dev`；M0.4 位于 `feat/m0-dockview`，维护者报告 M0.4.5 的 12 项验收全部通过，待 PR 复核与合并。验收结果及证据级别见 [M0.4 acceptance](docs/acceptance/M0.4.md)。下一阶段为 **M0.5 Typed Tauri IPC**。尚未实现真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 仍是计划中的 MVP，并非已发布版本。
+> **项目状态（2026-11-08）：M0 基础建设进行中，M0.4 Dockview 已获得维护者最终验收确认。** M0.1–M0.4 已集成到 `dev`（M0.4 通过 [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3) 合并），维护者报告 M0.4.5 的 12 项验收全部通过。验收结果及证据级别见 [M0.4 acceptance](docs/acceptance/M0.4.md)。**M0.5 Typed Tauri IPC** 已在 `feat/m0-typed-ipc` 启动；M0.5.1 已实现最小只读 IPC 契约，但测试和跨平台验收尚待执行。尚未实现真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 仍是计划中的 MVP，并非已发布版本。
 
 ## Product goals / 产品目标
 
@@ -131,7 +131,7 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | A minimal typed frontend-to-Rust command works |
 | **M0.6** | Startup, persistence, Windows/Linux acceptance | Repeatable smoke-test evidence documented |
 
-**Current progress (2026-11-08):** M0.1–M0.3 changes are integrated into `dev` ([M0.2 PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [M0.3 PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2)). The project owner reports all 12 M0.4.5 acceptance checks passed on `feat/m0-dockview` ([M0.4 acceptance record](docs/acceptance/M0.4.md)); source-committed layout/active-state regression tests and linked M0.4 CI evidence remain follow-up documentation/hardening items. **M0.4 has not yet been merged into `dev`.** After PR review and required CI, proceed to **M0.5 — typed Tauri IPC**. Do **not** implement SQLite CRUD or PostgreSQL during M0.
+**Current progress (2026-11-08):** M0.1–M0.4 are integrated into `dev` ([M0.2 PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [M0.3 PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [M0.4 PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)). The project owner reports all 12 M0.4.5 acceptance checks passed ([M0.4 acceptance record](docs/acceptance/M0.4.md)); source-committed layout/active-state regression tests and independently linked M0.4 evidence remain follow-up hardening items. **M0.5.1 is implemented on `feat/m0-typed-ipc`, with automated/manual validation pending** ([M0.5 acceptance plan](docs/acceptance/M0.5.md)). Do **not** implement SQLite CRUD or PostgreSQL during M0.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +160,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Scaffolded application:** The Tauri/React shell and M0.2–M0.3 foundation are available on `dev`; use `feat/m0-dockview` for the accepted-but-not-yet-merged M0.4 docking workbench. Install dependencies and launch the desktop shell:
+**Scaffolded application:** The Tauri/React shell and M0.1–M0.4 foundation are on `dev`. Work on M0.5 typed IPC takes place on `feat/m0-typed-ipc` until its review and acceptance. Install dependencies and launch the desktop shell:
 
 ```powershell
 pnpm install
