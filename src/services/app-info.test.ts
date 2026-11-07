@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getAppInfo } from "./app-info";
+import { checkIpcProtocol, getAppInfo } from "./app-info";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -48,8 +48,37 @@ describe("getAppInfo", () => {
     await expect(getAppInfo()).rejects.toThrow("Unsupported IPC protocol version");
   });
 
-  it("propagates transport errors", async () => {
+  it("normalizes transport errors", async () => {
     invokeMock.mockRejectedValue(new Error("Transport unavailable"));
-    await expect(getAppInfo()).rejects.toThrow("Transport unavailable");
+
+    await expect(getAppInfo()).rejects.toMatchObject({
+      code: "TRANSPORT_ERROR",
+      message: "Cannot communicate with Rust backend",
+    });
   });
+
+
+  it("accepts a compatible IPC protocol", async () => {
+    invokeMock.mockResolvedValue(undefined);
+
+    await expect(checkIpcProtocol(1)).resolves.toBeUndefined();
+
+    expect(invokeMock).toHaveBeenCalledWith(
+      "check_ipc_protocol",
+      { protocolVersion: 1 },
+    );
+  });
+
+  it("propagates protocol mismatch from Rust", async () => {
+    invokeMock.mockRejectedValue({
+      code: "PROTOCOL_MISMATCH",
+      message: "Unsupported IPC protocol version",
+    });
+
+    await expect(checkIpcProtocol(999)).rejects.toMatchObject({
+      code: "PROTOCOL_MISMATCH",
+      message: "Unsupported IPC protocol version",
+    });
+  });
+
 });

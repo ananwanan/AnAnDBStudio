@@ -1,4 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+
+import { invokeIpc, IpcError } from "./ipc";
 
 export const IPC_PROTOCOL_VERSION = 1;
 
@@ -8,16 +9,18 @@ export interface AppInfo {
   readonly protocolVersion: number;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+function isRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value)
+  );
 }
 
-/**
- * Only this adapter knows the Tauri command name and wire response shape.
- * Rust responses are untrusted at runtime even when invoke<T> is used.
- */
 export async function getAppInfo(): Promise<AppInfo> {
-  const response: unknown = await invoke("get_app_info");
+  const response = await invokeIpc<unknown>("get_app_info");
 
   if (
     !isRecord(response) ||
@@ -26,11 +29,17 @@ export async function getAppInfo(): Promise<AppInfo> {
     typeof response.protocolVersion !== "number" ||
     !Number.isInteger(response.protocolVersion)
   ) {
-    throw new Error("Invalid get_app_info IPC response");
+    throw new IpcError(
+      "INVALID_RESPONSE",
+      "Invalid get_app_info IPC response",
+    );
   }
 
   if (response.protocolVersion !== IPC_PROTOCOL_VERSION) {
-    throw new Error("Unsupported IPC protocol version");
+    throw new IpcError(
+      "PROTOCOL_MISMATCH",
+      "Unsupported IPC protocol version",
+    );
   }
 
   return {
@@ -38,4 +47,12 @@ export async function getAppInfo(): Promise<AppInfo> {
     version: response.version,
     protocolVersion: response.protocolVersion,
   };
+}
+
+export async function checkIpcProtocol(
+  protocolVersion: number = IPC_PROTOCOL_VERSION,
+): Promise<void> {
+  await invokeIpc<void>("check_ipc_protocol", {
+    protocolVersion,
+  });
 }

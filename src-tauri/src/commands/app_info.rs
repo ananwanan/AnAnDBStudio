@@ -1,3 +1,4 @@
+use crate::error::{AppError, AppErrorCode};
 use serde::Serialize;
 
 pub const IPC_PROTOCOL_VERSION: u16 = 1;
@@ -19,9 +20,21 @@ pub fn get_app_info() -> AppInfo {
     }
 }
 
+#[tauri::command]
+pub fn check_ipc_protocol(protocol_version: u16) -> Result<(), AppError> {
+    if protocol_version != IPC_PROTOCOL_VERSION {
+        return Err(AppError::new(
+            AppErrorCode::ProtocolMismatch,
+            "Unsupported IPC protocol version",
+        ));
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{IPC_PROTOCOL_VERSION, get_app_info};
+    use super::{IPC_PROTOCOL_VERSION, check_ipc_protocol, get_app_info};
 
     #[test]
     fn app_info_uses_the_expected_protocol_and_version() {
@@ -40,6 +53,26 @@ mod tests {
                 "appName": "AnAnDB Studio",
                 "version": env!("CARGO_PKG_VERSION"),
                 "protocolVersion": 1
+            })
+        );
+    }
+
+    #[test]
+    fn compatible_ipc_protocol_succeeds() {
+        assert_eq!(check_ipc_protocol(IPC_PROTOCOL_VERSION), Ok(()));
+    }
+
+    #[test]
+    fn incompatible_ipc_protocol_returns_structured_error() {
+        let error = check_ipc_protocol(999).unwrap_err();
+
+        assert_eq!(error.code, crate::error::AppErrorCode::ProtocolMismatch);
+
+        assert_eq!(
+            serde_json::to_value(error).unwrap(),
+            serde_json::json!({
+                "code": "PROTOCOL_MISMATCH",
+                "message": "Unsupported IPC protocol version"
             })
         );
     }
