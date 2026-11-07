@@ -1,5 +1,6 @@
 use crate::error::{AppError, AppErrorCode};
 use serde::Serialize;
+use serde_json::Value;
 
 pub const IPC_PROTOCOL_VERSION: u16 = 1;
 
@@ -21,8 +22,19 @@ pub fn get_app_info() -> AppInfo {
 }
 
 #[tauri::command]
-pub fn check_ipc_protocol(protocol_version: u16) -> Result<(), AppError> {
-    if protocol_version != IPC_PROTOCOL_VERSION {
+pub fn check_ipc_protocol(protocol_version: Value) -> Result<(), AppError> {
+    // Validate the untrusted JSON value at the Rust boundary.
+    let version = protocol_version
+        .as_u64()
+        .and_then(|value| u16::try_from(value).ok())
+        .ok_or_else(|| {
+            AppError::new(
+                AppErrorCode::InvalidArgument,
+                "protocolVersion must be an unsigned 16-bit integer",
+            )
+        })?;
+
+    if version != IPC_PROTOCOL_VERSION {
         return Err(AppError::new(
             AppErrorCode::ProtocolMismatch,
             "Unsupported IPC protocol version",
@@ -34,21 +46,14 @@ pub fn check_ipc_protocol(protocol_version: u16) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{IPC_PROTOCOL_VERSION, check_ipc_protocol, get_app_info};
+    use super::*;
 
     #[test]
-    fn app_info_uses_the_expected_protocol_and_version() {
-        let info = get_app_info();
-        assert_eq!(info.protocol_version, IPC_PROTOCOL_VERSION);
-        assert_eq!(info.version, env!("CARGO_PKG_VERSION"));
-    }
+    fn app_info_serializes_correctly() {
+        let value = serde_json::to_value(get_app_info()).unwrap();
 
-    #[test]
-    fn app_info_serializes_to_camel_case() {
-        let info = get_app_info();
-        let encoded = serde_json::to_value(info).expect("app info should serialize");
         assert_eq!(
-            encoded,
+            value,
             serde_json::json!({
                 "appName": "AnAnDB Studio",
                 "version": env!("CARGO_PKG_VERSION"),
@@ -58,22 +63,37 @@ mod tests {
     }
 
     #[test]
-    fn compatible_ipc_protocol_succeeds() {
-        assert_eq!(check_ipc_protocol(IPC_PROTOCOL_VERSION), Ok(()));
+    fn valid_protocol_succeeds() {
+        assert_eq!(check_ipc_protocol(serde_json::json!(1)), Ok(()));
     }
 
     #[test]
-    fn incompatible_ipc_protocol_returns_structured_error() {
-        let error = check_ipc_protocol(999).unwrap_err();
+    fn unsupported_protocol_returns_mismatch() {
+        let error = check_ipc_protocol(serde_json::json!(2)).unwrap_err();
 
-        assert_eq!(error.code, crate::error::AppErrorCode::ProtocolMismatch);
+        assert_eq!(error.code, AppErrorCode::ProtocolMismatch);
+    }
 
-        assert_eq!(
-            serde_json::to_value(error).unwrap(),
-            serde_json::json!({
-                "code": "PROTOCOL_MISMATCH",
-                "message": "Unsupported IPC protocol version"
-            })
-        );
+    #[test]
+    fn invalid_arguments_are_rejected() {
+        let invalid = [
+            serde_json::Value::Null,
+            serde_json::json!(true),
+            serde_json::json!("1"),
+            serde_json::json!(-1),
+            serde_json::json!(1.5),
+            serde_json::json!(65536),
+            serde_json::json!({}),
+        ];
+
+        for value in invalid {
+            let error = check_ipc_protocol(value).unwrap_err();
+
+            assert_eq!(error.code, AppErrorCode::InvalidArgument);
+
+            let json = serde_json::to_value(error).unwrap();
+
+            assert_eq!(json["code"], "INVALID_ARGUMENT");
+        }
     }
 }
