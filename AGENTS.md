@@ -109,7 +109,7 @@ Never create empty placeholder crates just to match this diagram.
 
 - Use React functional components and TypeScript strict typing.
 - Keep Tauri IPC calls centralized in typed service adapters; do not scatter stringly typed `invoke` calls among UI controls.
-- Keep state ownership clear: transient component state locally, shared workbench state via Zustand, long-running result state via dedicated services.
+- Keep state ownership clear: transient component state locally; M1.4 uses a centralized `useSyncExternalStore` SQLite workspace store. Introduce Zustand only if justified by later complexity; long-running result state belongs in dedicated services.
 - Use Monaco for SQL editing, Dockview for layout, AG Grid **Community** for data grids unless an explicit licensing decision changes this.
 - Do not rely on paid AG Grid Enterprise features in the community build.
 - Virtualize large lists/tables and avoid unnecessary rerendering of all result rows.
