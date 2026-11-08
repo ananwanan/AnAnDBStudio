@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     DockviewReact,
     themeDark,
@@ -16,13 +16,8 @@ import { ExplorerSidebar } from "./ExplorerSidebar";
 import { WelcomePanel } from "./WelcomePanel";
 import { ResultsPanel } from "./ResultsPanel";
 
-const components = {
-    explorer: () => <ExplorerSidebar />,
-    welcome: () => <WelcomePanel />,
-    results: () => <ResultsPanel />,
-};
-
 interface DockWorkbenchProps {
+    onNewConnection: () => void;
     onApiReady: (api: DockApi) => void;
 }
 
@@ -56,8 +51,14 @@ function useDockTheme() {
 
 export function DockWorkbench({
     onApiReady,
+    onNewConnection,
 }: DockWorkbenchProps) {
     const theme = useDockTheme();
+    const components = useMemo(() => ({
+        explorer: () => <ExplorerSidebar onNewConnection={onNewConnection} />,
+        welcome: () => <WelcomePanel />,
+        results: () => <ResultsPanel />,
+    }), [onNewConnection]);
     const [api, setApi] = useState<DockApi | null>(null);
 
     function handleReady(event: DockviewReadyEvent) {

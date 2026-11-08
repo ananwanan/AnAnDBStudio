@@ -4,12 +4,12 @@
 >
 > 现代化、跨平台的专业数据库管理工具。
 
-[![Status](https://img.shields.io/badge/status-M0%20in%20progress-blue)](#development-roadmap--开发路线)
+[![Status](https://img.shields.io/badge/status-M1.4%20local%20checks%20passed-yellow)](#development-roadmap--开发路线)
 [![Desktop](https://img.shields.io/badge/desktop-Windows%20%7C%20Linux%20%7C%20macOS-informational)](#technical-stack)
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.5 已合并到 `dev`（M0.5 为 [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)）；[M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6.1–M0.6.2 已实现且 Windows/Ubuntu 四项 CI 检查通过**（[run 42447978668](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668)）。**M0.6.3 的 Windows Release 和 Linux 图形启动等 6 项由维护者报告全部通过**。M0.6.4 退出和异常恢复测试也已由维护者报告通过；M0.6.5 最终验收与 PR #5 集成仍待完成，工作在 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5)。详见 [M0.6 验收记录](docs/acceptance/M0.6.md)。尚无真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 未发布。
+> **项目状态（2026-11-08）：M1.4 本地验收通过，等待 PR 集成。** M0 基础工程已由维护者验收，且 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) 已合并到 `dev`；SQLite M1.1–M1.3/M1.5 后端通过 [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) 合并。`dev` 的 [Windows/Ubuntu CI 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461) 四项通过。M1.4 的连接窗口、原生文件选择和 Schema Explorer 已推送至 [`feat/m1.4-explorer`](https://github.com/ananwanan/AnAnDBStudio/tree/feat/m1.4-explorer)，维护者报告本地测试与功能验证通过；[PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) 尚待合入 `dev`，PR CI 结果应以 GitHub Actions 最新运行状态为准。详情见 [M1.4 验收记录](docs/acceptance/M1.4.md)。尚未实现 SQL 执行、数据编辑或发布 `v0.1.0`。
 
 ## Product goals / 产品目标
 
@@ -32,7 +32,7 @@ AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 
 | SQL editor | Monaco Editor | SQL editing experience |
 | Data grid | AG Grid Community | Virtualized result display and editing |
 | Workspace | Dockview | Tabs, docking, split panels, layout persistence |
-| Frontend state | Zustand | UI state management |
+| Frontend state | React `useSyncExternalStore` (M1.4); Zustand is a future option | Process-local connection and schema state |
 | SQLite driver | rusqlite | SQLite 3 implementation |
 | Async orchestration | Tokio + dedicated DB workers | Job control, cancellation and messages |
 | Transport | Tauri commands + channels | Typed request/response and incremental results |
@@ -129,9 +129,19 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.3** | shadcn/ui, Tailwind, theme tokens, dark/light mode | Theme remains consistent across components |
 | **M0.4** | Dockview explorer/editor/result layout | Tabs/panels work; layout can be saved/restored |
 | **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | Accepted and merged into `dev` (PR #4) |
-| **M0.6** | Startup, persistence, Windows/Linux acceptance | M0.6.1–M0.6.4 implemented/maintainer-accepted; M0.6.5 integration pending |
+| **M0.6** | Startup, persistence, Windows/Linux acceptance | PR #5 merged; integrated `dev` CI passed, GUI/recovery maintainer-reported passed |
 
-**Current progress (2026-11-08):** M0.1–M0.5 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3), [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)). On M0.6 branch `feat/m0-startup-acceptance`, M0.6.1 Release build CI and M0.6.2 persistence regression coverage passed [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668). Maintainer reports all six M0.6.3 Windows/Linux GUI and IPC/CSP acceptance cases passed ([record](docs/acceptance/M0.6.md)). M0.6.4 recovery checks are maintainer-reported passed; M0.6.5 closeout remains pending; [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) is open. Do not add SQLite CRUD during M0.
+### M1 breakdown / SQLite Core 拆分
+
+| Task | Delivered scope | Evidence / current status |
+| --- | --- | --- |
+| **M1.1** | Tauri-independent SQLite driver; existing files, read-only/read-write open | Integrated via PR #6; backend CI passed |
+| **M1.2** | Connection registry, typed open/list/close IPC | Integrated via PR #6; backend CI passed |
+| **M1.3** | Bounded main-schema discovery, typed schema IPC | Integrated via PR #6; backend CI passed |
+| **M1.4** | Native connection dialog, workspace state, interactive schema explorer | [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) open; maintainer-reported local tests and GUI verification pass |
+| **M1.5** | Connection lifecycle and error hardening | Integrated via PR #6; backend CI passed |
+
+**Current progress (2026-11-08):** M0 is integrated and maintainer-accepted; M1.1–M1.3 and M1.5 are in `dev` via [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) with four successful Windows/Ubuntu checks on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 code is on `feat/m1.4-explorer`; maintainer reported all local tests and functional verification pass after TypeScript/Vitest fixes. PR #7 still requires final-head CI and merge before M1 integrated sign-off. [M1 acceptance overview](docs/acceptance/M1.md) and [M1.4 evidence](docs/acceptance/M1.4.md) distinguish user-reported checks from GitHub CI. M2 SQL execution remains out of scope.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +170,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Scaffolded application:** M0.1–M0.5 are integrated into `dev`. M0.6 work continues on `feat/m0-startup-acceptance` under [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5); M0.6.4 is maintainer-accepted; M0.6.5 remains outstanding. Install dependencies and launch the desktop shell:
+**Desktop application:** For the M1.4 connection dialog and Explorer, check out `feat/m1.4-explorer` until [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) lands on `dev`. Existing databases can be opened through the desktop GUI; no SQL execution is implemented yet. Use the checked-in lockfiles:
 
 ```powershell
 pnpm install

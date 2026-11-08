@@ -9,7 +9,7 @@ This document defines repository-wide instructions for coding agents and contrib
 - Goal: a professional, cross-platform database management desktop application comparable in workflow ambition to Navicat and DBeaver.
 - Selected stack: **Tauri 2 + Rust (stable) + React + TypeScript + Vite**.
 - First supported database: **SQLite 3**. PostgreSQL and MySQL/MariaDB are planned for later milestones.
-- Historical note: at documentation initialization (2026-11-07), the repository was **planning/documentation-only**. The current implementation status must be checked on the active branch; by 2026-11-08, M0.1–M0.4 were integrated into `dev` (M0.4 through PR #3). M0.5.1–M0.5.5 were implemented on `feat/m0-typed-ipc` and the maintainer reported local acceptance passed at commit `3543627`. Implementation CI passed (run 42446066374), and PR #4 was merged into `dev` on 2026-11-08. M0.6.1/M0.6.2 code and CI passed on `feat/m0-startup-acceptance`; M0.6.3 GUI checks were maintainer-reported as 6/6 passed (see `docs/acceptance/M0.6.md`). M0.6.4 exit/recovery tests were subsequently maintainer-reported passed; M0.6.5 final integration remains outstanding. Do not assume later milestones are implemented.
+- Historical note: development began as documentation-only on 2026-11-07. As of 2026-11-08, M0 PRs #1–#5 were merged into `dev`; the M0 GUI/recovery checks were maintainer-reported passed, and integrated Windows/Ubuntu CI succeeded. SQLite M1.1–M1.3/M1.5 backend was integrated via PR #6, with all four jobs successful on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 dialog/explorer is on `feat/m1.4-explorer` under PR #7: the maintainer reports local tests and functional verification passed; GitHub PR integration and final-head CI remain separate gates. See `docs/acceptance/M1.md`.
 - `README.md` is the product/roadmap source of truth. Do not mark planned features as implemented without evidence.
 
 ## 2. Roadmap and task boundaries
@@ -109,7 +109,7 @@ Never create empty placeholder crates just to match this diagram.
 
 - Use React functional components and TypeScript strict typing.
 - Keep Tauri IPC calls centralized in typed service adapters; do not scatter stringly typed `invoke` calls among UI controls.
-- Keep state ownership clear: transient component state locally, shared workbench state via Zustand, long-running result state via dedicated services.
+- Keep state ownership clear: transient component state locally; M1.4 uses a centralized `useSyncExternalStore` SQLite workspace store. Introduce Zustand only if justified by later complexity; long-running result state belongs in dedicated services.
 - Use Monaco for SQL editing, Dockview for layout, AG Grid **Community** for data grids unless an explicit licensing decision changes this.
 - Do not rely on paid AG Grid Enterprise features in the community build.
 - Virtualize large lists/tables and avoid unnecessary rerendering of all result rows.
@@ -166,6 +166,6 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 
 ## 9. Immediate next action
 
-**M0.6.5 final acceptance**: M0.1–M0.5 are integrated in `dev`. M0.6.1/M0.6.2 Windows/Linux Release build and persistence CI passed; M0.6.3 (6/6) and M0.6.4 (8 checks) desktop/recovery cases were maintainer-reported passed. Verify PR #5's final documentation-head Windows/Ubuntu CI, review the consolidated M0 evidence and historical acceptance addenda, then merge PR #5 only with maintainer authorization, verify integrated `dev` and record explicit M0 final approval. Do not start SQLite or database CRUD before M0 closes.
+**M1.4 Connection UI & Schema Explorer**: M0 PR #5 and SQLite M1.1–M1.5 PR #6 were merged into `dev` on 2026-11-08. Implement the native SQLite file picker, in-memory connection state, multi-connection explorer, schema tree and error handling. Run Windows/Ubuntu CI, perform real-database desktop acceptance, then update `docs/acceptance/M1.4.md`. Do not mark M1 accepted based on code merge alone, and do not start M2 SQL execution before M1 GUI acceptance.
 
 For the definitive scope and milestones, read [README.md](README.md).
