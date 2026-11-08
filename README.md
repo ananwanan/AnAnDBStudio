@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.5 已合并到 `dev`（M0.5 为 [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)）；[M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6.1–M0.6.2 已实现且 Windows/Ubuntu 四项 CI 检查通过**（[run 42447978668](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668)）。**M0.6.3 的 Windows Release 和 Linux 图形启动等 6 项由维护者报告全部通过**。M0.6.4 退出与异常恢复测试、M0.6.5 最终验收仍待完成，工作在 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5)。详见 [M0.6 验收记录](docs/acceptance/M0.6.md)。尚无真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 未发布。
+> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.5 已合并到 `dev`（M0.5 为 [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)）；[M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6.1–M0.6.2 已实现且 Windows/Ubuntu 四项 CI 检查通过**（[run 42447978668](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668)）。**M0.6.3 的 Windows Release 和 Linux 图形启动等 6 项由维护者报告全部通过**。M0.6.4 退出和异常恢复测试也已由维护者报告通过；M0.6.5 最终验收与 PR #5 集成仍待完成，工作在 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5)。详见 [M0.6 验收记录](docs/acceptance/M0.6.md)。尚无真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 未发布。
 
 ## Product goals / 产品目标
 
@@ -129,9 +129,9 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.3** | shadcn/ui, Tailwind, theme tokens, dark/light mode | Theme remains consistent across components |
 | **M0.4** | Dockview explorer/editor/result layout | Tabs/panels work; layout can be saved/restored |
 | **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | Accepted and merged into `dev` (PR #4) |
-| **M0.6** | Startup, persistence, Windows/Linux acceptance | M0.6.1–M0.6.3 complete/maintainer-accepted; M0.6.4–M0.6.5 pending |
+| **M0.6** | Startup, persistence, Windows/Linux acceptance | M0.6.1–M0.6.4 implemented/maintainer-accepted; M0.6.5 integration pending |
 
-**Current progress (2026-11-08):** M0.1–M0.5 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3), [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)). On M0.6 branch `feat/m0-startup-acceptance`, M0.6.1 Release build CI and M0.6.2 persistence regression coverage passed [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668). Maintainer reports all six M0.6.3 Windows/Linux GUI and IPC/CSP acceptance cases passed ([record](docs/acceptance/M0.6.md)). M0.6.4 recovery and M0.6.5 closeout remain pending; [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) is open. Do not add SQLite CRUD during M0.
+**Current progress (2026-11-08):** M0.1–M0.5 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3), [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)). On M0.6 branch `feat/m0-startup-acceptance`, M0.6.1 Release build CI and M0.6.2 persistence regression coverage passed [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668). Maintainer reports all six M0.6.3 Windows/Linux GUI and IPC/CSP acceptance cases passed ([record](docs/acceptance/M0.6.md)). M0.6.4 recovery checks are maintainer-reported passed; M0.6.5 closeout remains pending; [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) is open. Do not add SQLite CRUD during M0.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +160,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Scaffolded application:** M0.1–M0.5 are integrated into `dev`. M0.6 work continues on `feat/m0-startup-acceptance` under [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5); M0.6.4/M0.6.5 are still outstanding. Install dependencies and launch the desktop shell:
+**Scaffolded application:** M0.1–M0.5 are integrated into `dev`. M0.6 work continues on `feat/m0-startup-acceptance` under [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5); M0.6.4 is maintainer-accepted; M0.6.5 remains outstanding. Install dependencies and launch the desktop shell:
 
 ```powershell
 pnpm install
