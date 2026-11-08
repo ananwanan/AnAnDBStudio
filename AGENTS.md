@@ -9,7 +9,7 @@ This document defines repository-wide instructions for coding agents and contrib
 - Goal: a professional, cross-platform database management desktop application comparable in workflow ambition to Navicat and DBeaver.
 - Selected stack: **Tauri 2 + Rust (stable) + React + TypeScript + Vite**.
 - First supported database: **SQLite 3**. PostgreSQL and MySQL/MariaDB are planned for later milestones.
-- Historical note: at documentation initialization (2026-11-07), the repository was **planning/documentation-only**. The current implementation status must be checked on the active branch; by 2026-11-08, M0.1–M0.4 were integrated into `dev` (M0.4 through PR #3). M0.4 Dockview received owner-reported final acceptance (see `docs/acceptance/M0.4.md`), and M0.5.1 was started on `feat/m0-typed-ipc` without completed validation (see `docs/acceptance/M0.5.md`). Do not assume later milestones are implemented.
+- Historical note: at documentation initialization (2026-11-07), the repository was **planning/documentation-only**. The current implementation status must be checked on the active branch; by 2026-11-08, M0.1–M0.4 were integrated into `dev` (M0.4 through PR #3). M0.5.1–M0.5.5 were implemented on `feat/m0-typed-ipc` and the maintainer reported local acceptance passed at commit `3543627`. Final-head CI and PR #4 merge were not yet complete at documentation time (see `docs/acceptance/M0.5.md`). M0.6 is planned only (see `docs/acceptance/M0.6.md`). Do not assume later milestones are implemented.
 - `README.md` is the product/roadmap source of truth. Do not mark planned features as implemented without evidence.
 
 ## 2. Roadmap and task boundaries
@@ -166,6 +166,6 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 
 ## 9. Immediate next action
 
-**M0.5 in progress**: M0.4 was merged to `dev` through PR #3 after the owner reported the 12/12 M0.4.5 checklist passed. M0.5.1 adds the minimal typed, read-only `get_app_info` Tauri command and a frontend IPC adapter; automated/manual validation is still pending. Continue through the shared error boundary, centralized IPC services, least-privilege audit and acceptance gates. Keep database CRUD and real drivers out of M0.5; record actual evidence and limitations in `docs/acceptance/M0.5.md`.
+**M0.5 closeout → M0.6**: The maintainer confirmed M0.5.1–M0.5.5 tests passed and pushed the accepted implementation (`3543627`); the GitHub PR #4 remains unmerged and final commit CI completion must be verified before integration. Finish documentation/review, merge only with explicit authorization, then branch M0.6 from updated `dev`. First M0.6 deliverable: reproducible startup, persistence, and build smoke checks on Windows/Linux without adding database drivers or SQL CRUD. Track automated-vs-manual evidence separately in `docs/acceptance/M0.6.md`; address any lifecycle/persistence regressions before marking M0 accepted.
 
 For the definitive scope and milestones, read [README.md](README.md).
