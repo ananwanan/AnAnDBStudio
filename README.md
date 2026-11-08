@@ -32,7 +32,7 @@ AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 
 | SQL editor | Monaco Editor | SQL editing experience |
 | Data grid | AG Grid Community | Virtualized result display and editing |
 | Workspace | Dockview | Tabs, docking, split panels, layout persistence |
-| Frontend state | Zustand | UI state management |
+| Frontend state | React `useSyncExternalStore` (M1.4); Zustand is a future option | Process-local connection and schema state |
 | SQLite driver | rusqlite | SQLite 3 implementation |
 | Async orchestration | Tokio + dedicated DB workers | Job control, cancellation and messages |
 | Transport | Tauri commands + channels | Typed request/response and incremental results |
