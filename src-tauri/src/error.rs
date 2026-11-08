@@ -6,6 +6,12 @@ pub enum AppErrorCode {
     InvalidArgument,
     ProtocolMismatch,
     Internal,
+    DatabaseOpenFailed,
+    DatabaseCloseFailed,
+    ConnectionNotFound,
+    ConnectionLimitReached,
+    SchemaReadFailed,
+    SchemaTooLarge,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

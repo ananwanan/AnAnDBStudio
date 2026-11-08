@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-sqlite-schema"
+description = "Enables the get_sqlite_schema command without any pre-configured scope."
+commands.allow = ["get_sqlite_schema"]
+
+[[permission]]
+identifier = "deny-get-sqlite-schema"
+description = "Denies the get_sqlite_schema command without any pre-configured scope."
+commands.deny = ["get_sqlite_schema"]
