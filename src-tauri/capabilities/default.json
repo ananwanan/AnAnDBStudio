@@ -11,6 +11,7 @@
     "allow-open-sqlite-connection",
     "allow-list-sqlite-connections",
     "allow-close-sqlite-connection",
-    "allow-get-sqlite-schema"
+    "allow-get-sqlite-schema",
+    "dialog:allow-open"
   ]
 }

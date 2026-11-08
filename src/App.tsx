@@ -1,7 +1,10 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { isTauri } from "@tauri-apps/api/core";
 
 import { AppHeader } from "@/components/workbench/AppHeader";
+import { NewConnectionDialog } from "@/components/workbench/NewConnectionDialog";
+import { initializeSqliteWorkspace } from "@/stores/sqlite-workspace";
 import { DockWorkbench } from "@/components/workbench/DockWorkbench";
 import { StatusBar } from "@/components/workbench/StatusBar";
 import { useWorkbenchShortcuts } from "@/hooks/useWorkbenchShortcuts";
@@ -30,7 +33,14 @@ const EMPTY_SNAPSHOT: PanelSnapshot = {
 
 export default function App() {
   const [dockApi, setDockApi] = useState<DockApi | null>(null);
-  
+  const [showConnectionDialog, setShowConnectionDialog] = useState(false);
+  const openConnectionDialog = useCallback(() => setShowConnectionDialog(true), []);
+  const closeConnectionDialog = useCallback(() => setShowConnectionDialog(false), []);
+
+  useEffect(() => {
+    if (isTauri()) void initializeSqliteWorkspace();
+  }, []);
+
   useWorkbenchShortcuts(dockApi);
 
   const [panelSnapshot, setPanelSnapshot] =
@@ -109,6 +119,7 @@ export default function App() {
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background text-foreground">
       <AppHeader
+        onNewConnection={openConnectionDialog}
         onResetLayout={handleResetLayout}
         canResetLayout={dockApi !== null}
         onOpenPanel={handleOpenPanel}
@@ -116,9 +127,10 @@ export default function App() {
         activePanel={panelSnapshot.active}
       />
 
-      <DockWorkbench onApiReady={setDockApi} />
+      <DockWorkbench onApiReady={setDockApi} onNewConnection={openConnectionDialog} />
 
       <StatusBar />
+      {showConnectionDialog && <NewConnectionDialog onClose={closeConnectionDialog} />}
     </div>
   );
 }

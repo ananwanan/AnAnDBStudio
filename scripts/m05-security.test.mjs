@@ -44,6 +44,7 @@ test("command permissions remain restricted", () => {
 
     const expected = commands
         .map((command) => `allow-${command.replaceAll("_", "-")}`)
+        .concat("dialog:allow-open")
         .sort();
 
     assert.deepEqual(capability.windows, ["main"]);

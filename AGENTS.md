@@ -166,6 +166,6 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 
 ## 9. Immediate next action
 
-**M0.6.5 final acceptance**: M0.1–M0.5 are integrated in `dev`. M0.6.1/M0.6.2 Windows/Linux Release build and persistence CI passed; M0.6.3 (6/6) and M0.6.4 (8 checks) desktop/recovery cases were maintainer-reported passed. Verify PR #5's final documentation-head Windows/Ubuntu CI, review the consolidated M0 evidence and historical acceptance addenda, then merge PR #5 only with maintainer authorization, verify integrated `dev` and record explicit M0 final approval. Do not start SQLite or database CRUD before M0 closes.
+**M1.4 Connection UI & Schema Explorer**: M0 PR #5 and SQLite M1.1–M1.5 PR #6 were merged into `dev` on 2026-11-08. Implement the native SQLite file picker, in-memory connection state, multi-connection explorer, schema tree and error handling. Run Windows/Ubuntu CI, perform real-database desktop acceptance, then update `docs/acceptance/M1.4.md`. Do not mark M1 accepted based on code merge alone, and do not start M2 SQL execution before M1 GUI acceptance.
 
 For the definitive scope and milestones, read [README.md](README.md).

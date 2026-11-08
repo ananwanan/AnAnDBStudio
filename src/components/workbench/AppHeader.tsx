@@ -15,6 +15,7 @@ import type { WorkbenchPanelId } from "@/lib/workbench-panels";
 const menus = ["文件", "编辑", "视图", "工具", "帮助"];
 
 interface AppHeaderProps {
+    onNewConnection: () => void;
     onResetLayout: () => void;
     canResetLayout: boolean;
     onOpenPanel: (id: WorkbenchPanelId) => void;
@@ -23,6 +24,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({
+    onNewConnection,
     onResetLayout,
     canResetLayout,
     onOpenPanel,
@@ -54,7 +56,7 @@ export function AppHeader({
             </div>
 
             <div className="flex h-11 min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap border-t px-3">
-                <Button className="shrink-0" size="sm" variant="outline" disabled>
+                <Button className="shrink-0" size="sm" variant="outline" onClick={onNewConnection}>
                     <Plus className="size-4" />
                     新建连接
                 </Button>
