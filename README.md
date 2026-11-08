@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M0 基础建设进行中，M0.4 Dockview 已获得维护者最终验收确认。** M0.1–M0.3 已进入 `dev`；M0.4 位于 `feat/m0-dockview`，维护者报告 M0.4.5 的 12 项验收全部通过，待 PR 复核与合并。验收结果及证据级别见 [M0.4 acceptance](docs/acceptance/M0.4.md)。下一阶段为 **M0.5 Typed Tauri IPC**。尚未实现真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 仍是计划中的 MVP，并非已发布版本。
+> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.4 已集成到 `dev`（M0.4 为 [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)）。**M0.5.1–M0.5.5 已实现，并获得维护者本地验收通过确认**；验收代码提交为 [`3543627`](https://github.com/ananwanan/AnAnDBStudio/commit/3543627e87e97175ddbb828fa88a3a24219ceb3a)，[PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4) 尚未合并；实现提交的 [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42446066374) 已通过，文档分支最终 CI 仍待确认。见 [M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6 已进入规划**（[启动与跨平台验收计划](docs/acceptance/M0.6.md)）。真实 SQLite 连接、SQL 执行和数据编辑均未开始；`v0.1.0` 尚未发布。
 
 ## Product goals / 产品目标
 
@@ -128,10 +128,10 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.2** | Rust workspace, lint/format, test baseline, CI | `cargo fmt` / `cargo clippy` / tests + frontend checks run |
 | **M0.3** | shadcn/ui, Tailwind, theme tokens, dark/light mode | Theme remains consistent across components |
 | **M0.4** | Dockview explorer/editor/result layout | Tabs/panels work; layout can be saved/restored |
-| **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | A minimal typed frontend-to-Rust command works |
-| **M0.6** | Startup, persistence, Windows/Linux acceptance | Repeatable smoke-test evidence documented |
+| **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | Maintainer accepted; PR #4 integration pending |
+| **M0.6** | Startup, persistence, Windows/Linux acceptance | Planned: repeatable smoke-test evidence documented |
 
-**Current progress (2026-11-08):** M0.1–M0.3 changes are integrated into `dev` ([M0.2 PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [M0.3 PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2)). The project owner reports all 12 M0.4.5 acceptance checks passed on `feat/m0-dockview` ([M0.4 acceptance record](docs/acceptance/M0.4.md)); source-committed layout/active-state regression tests and linked M0.4 CI evidence remain follow-up documentation/hardening items. **M0.4 has not yet been merged into `dev`.** After PR review and required CI, proceed to **M0.5 — typed Tauri IPC**. Do **not** implement SQLite CRUD or PostgreSQL during M0.
+**Current progress (2026-11-08):** M0.1–M0.4 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)). The owner reports M0.4 acceptance passed ([record](docs/acceptance/M0.4.md)). **M0.5.1–M0.5.5 are implemented and maintainer-accepted on `feat/m0-typed-ipc`** ([acceptance report](docs/acceptance/M0.5.md)); implementation CI [run 42446066374](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42446066374) passed; documentation-head CI/review and PR #4 integration remain pending. **M0.6 is planned, not yet implemented**, starting with deterministic startup and persistence smoke checks ([plan](docs/acceptance/M0.6.md)). Do not add SQLite CRUD during M0.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +160,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Scaffolded application:** The Tauri/React shell and M0.2–M0.3 foundation are available on `dev`; use `feat/m0-dockview` for the accepted-but-not-yet-merged M0.4 docking workbench. Install dependencies and launch the desktop shell:
+**Scaffolded application:** M0.1–M0.4 are integrated into `dev`. M0.5 is maintainer-accepted on `feat/m0-typed-ipc`, awaiting final CI/review and merge into `dev`; use that branch for the accepted IPC implementation until integrated. M0.6 is the next milestone; its implementation should branch from updated `dev` only after M0.5 integration. Install dependencies and launch the desktop shell:
 
 ```powershell
 pnpm install
@@ -176,8 +176,8 @@ https://v2.tauri.app/start/prerequisites/
 | --- | --- |
 | Product | AnAnDB Studio |
 | Repository | `ananwanan/AnAnDBStudio` |
-| Executable (planned) | `anandb` / `anandb.exe` |
-| Application identifier (planned) | `cc.ananwanan.anandb` |
+| Executable (roadmap target; not yet implemented) | `anandb` / `anandb.exe` (current package/binary: `anandbstudio`) |
+| Application identifier (roadmap target; not yet implemented) | `cc.ananwanan.anandb` (current Tauri config: `com.ananwanan.anandbstudio`; decision pending) |
 | First MVP target | `v0.1.0` (M4) |
 
 ## Contributing and agent guidance

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-check-ipc-protocol"
+description = "Enables the check_ipc_protocol command without any pre-configured scope."
+commands.allow = ["check_ipc_protocol"]
+
+[[permission]]
+identifier = "deny-check-ipc-protocol"
+description = "Denies the check_ipc_protocol command without any pre-configured scope."
+commands.deny = ["check_ipc_protocol"]
