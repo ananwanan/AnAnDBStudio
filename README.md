@@ -4,12 +4,12 @@
 >
 > 现代化、跨平台的专业数据库管理工具。
 
-[![Status](https://img.shields.io/badge/status-M1.4%20implementation-yellow)](#development-roadmap--开发路线)
+[![Status](https://img.shields.io/badge/status-M1.4%20local%20checks%20passed-yellow)](#development-roadmap--开发路线)
 [![Desktop](https://img.shields.io/badge/desktop-Windows%20%7C%20Linux%20%7C%20macOS-informational)](#technical-stack)
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M1.4 开发补丁待验收。** M0 的 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) 和 SQLite M1.1–M1.5 后端的 [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) 已合并到 `dev`；当前 `dev` 的 [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461) 四项通过。M1.4 增加连接窗口和 Schema Explorer，GUI 验收仍待执行，见 [M1.4 验收记录](docs/acceptance/M1.4.md)。SQL 执行、数据编辑及 `v0.1.0` 发布均未完成。
+> **项目状态（2026-11-08）：M1.4 本地验收通过，等待 PR 集成。** M0 基础工程已由维护者验收，且 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) 已合并到 `dev`；SQLite M1.1–M1.3/M1.5 后端通过 [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) 合并。`dev` 的 [Windows/Ubuntu CI 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461) 四项通过。M1.4 的连接窗口、原生文件选择和 Schema Explorer 已推送至 [`feat/m1.4-explorer`](https://github.com/ananwanan/AnAnDBStudio/tree/feat/m1.4-explorer)，维护者报告本地测试与功能验证通过；[PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) 尚待合入 `dev`，PR CI 结果应以 GitHub Actions 最新运行状态为准。详情见 [M1.4 验收记录](docs/acceptance/M1.4.md)。尚未实现 SQL 执行、数据编辑或发布 `v0.1.0`。
 
 ## Product goals / 产品目标
 
@@ -129,9 +129,19 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.3** | shadcn/ui, Tailwind, theme tokens, dark/light mode | Theme remains consistent across components |
 | **M0.4** | Dockview explorer/editor/result layout | Tabs/panels work; layout can be saved/restored |
 | **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | Accepted and merged into `dev` (PR #4) |
-| **M0.6** | Startup, persistence, Windows/Linux acceptance | PR #5 merged to `dev`; desktop/recovery acceptance maintainer-reported passed |
+| **M0.6** | Startup, persistence, Windows/Linux acceptance | PR #5 merged; integrated `dev` CI passed, GUI/recovery maintainer-reported passed |
 
-**Current progress (2026-11-08):** M0 and M1.1–M1.5 implementation are integrated into `dev` ([PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5), [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6)). M1.4 desktop connection dialog and Schema Explorer are proposed in the [M1.4 acceptance plan](docs/acceptance/M1.4.md). M1 is not accepted until the real-database GUI tests pass; M2 SQL execution remains out of scope.
+### M1 breakdown / SQLite Core 拆分
+
+| Task | Delivered scope | Evidence / current status |
+| --- | --- | --- |
+| **M1.1** | Tauri-independent SQLite driver; existing files, read-only/read-write open | Integrated via PR #6; backend CI passed |
+| **M1.2** | Connection registry, typed open/list/close IPC | Integrated via PR #6; backend CI passed |
+| **M1.3** | Bounded main-schema discovery, typed schema IPC | Integrated via PR #6; backend CI passed |
+| **M1.4** | Native connection dialog, workspace state, interactive schema explorer | [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) open; maintainer-reported local tests and GUI verification pass |
+| **M1.5** | Connection lifecycle and error hardening | Integrated via PR #6; backend CI passed |
+
+**Current progress (2026-11-08):** M0 is integrated and maintainer-accepted; M1.1–M1.3 and M1.5 are in `dev` via [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) with four successful Windows/Ubuntu checks on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 code is on `feat/m1.4-explorer`; maintainer reported all local tests and functional verification pass after TypeScript/Vitest fixes. PR #7 still requires final-head CI and merge before M1 integrated sign-off. [M1 acceptance overview](docs/acceptance/M1.md) and [M1.4 evidence](docs/acceptance/M1.4.md) distinguish user-reported checks from GitHub CI. M2 SQL execution remains out of scope.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +170,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Desktop application:** M0 and the M1 SQLite backend are integrated into `dev`. After applying M1.4, refresh `pnpm-lock.yaml` / `Cargo.lock` as documented in [M1.4 acceptance](docs/acceptance/M1.4.md), then install dependencies and launch:
+**Desktop application:** For the M1.4 connection dialog and Explorer, check out `feat/m1.4-explorer` until [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) lands on `dev`. Existing databases can be opened through the desktop GUI; no SQL execution is implemented yet. Use the checked-in lockfiles:
 
 ```powershell
 pnpm install
