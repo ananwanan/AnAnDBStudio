@@ -58,6 +58,9 @@ jobs:
       - name: Test frontend
         run: pnpm test
 
+      - name: Audit IPC security boundary
+        run: node --test scripts/m05-security.test.mjs
+
       - name: Build frontend
         run: pnpm build
 

@@ -2,7 +2,9 @@
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+
+import { defineConfig } from "vitest/config";
+import { configDefaults } from "vitest/config";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -28,5 +30,11 @@ export default defineConfig({
     watch: {
       ignored: ["**/src-tauri/**"],
     },
+  },
+  test: {
+    exclude: [
+      ...configDefaults.exclude,
+      "scripts/m05-security.test.mjs",
+    ],
   },
 });

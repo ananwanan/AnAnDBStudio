@@ -1,13 +1,6 @@
 mod commands;
 pub mod error;
 
-// Legacy scaffold command retained during M0.
-#[allow(unused)]
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -17,17 +10,4 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-#[cfg(test)]
-mod tests {
-    use super::greet;
-
-    #[test]
-    fn greet_returns_expected_message() {
-        assert_eq!(
-            greet("AnAnDB"),
-            "Hello, AnAnDB! You've been greeted from Rust!"
-        );
-    }
 }
