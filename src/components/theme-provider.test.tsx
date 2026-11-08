@@ -146,4 +146,37 @@ describe("ThemeProvider", () => {
         expect(document.documentElement.classList.contains("light"))
             .toBe(true);
     });
+
+    it("restores the selected theme after remount", () => {
+        const first = renderProvider();
+
+        fireEvent.click(screen.getByText("Dark"));
+
+        expect(
+            localStorage.getItem(THEME_STORAGE_KEY),
+        ).toBe("dark");
+
+        first.unmount();
+
+        renderProvider();
+
+        expect(screen.getByTestId("theme").textContent)
+            .toBe("dark");
+
+        expect(
+            document.documentElement.classList.contains("dark"),
+        ).toBe(true);
+    });
+
+    it("falls back to system for invalid stored theme", () => {
+        localStorage.setItem(
+            THEME_STORAGE_KEY,
+            "invalid-theme",
+        );
+
+        renderProvider();
+
+        expect(screen.getByTestId("theme").textContent)
+            .toBe("system");
+    });
 });

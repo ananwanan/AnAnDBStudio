@@ -1,4 +1,3 @@
-
 import type { DockviewReadyEvent } from "dockview-react";
 
 export type DockApi = DockviewReadyEvent["api"];
@@ -116,4 +115,35 @@ export function resetLayout(api: DockApi): void {
     api.clear();
     createDefaultLayout(api);
     saveLayout(api);
+}
+
+export function subscribeLayoutPersistence(
+    api: DockApi,
+): () => void {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const flush = () => {
+        if (timer === undefined) return;
+
+        clearTimeout(timer);
+        timer = undefined;
+        saveLayout(api);
+    };
+
+    const subscription = api.onDidLayoutChange(() => {
+        if (timer !== undefined) {
+            clearTimeout(timer);
+        }
+
+        timer = setTimeout(flush, 350);
+    });
+
+    // Flush pending layout changes before the WebView unloads.
+    window.addEventListener("pagehide", flush);
+
+    return () => {
+        subscription.dispose();
+        window.removeEventListener("pagehide", flush);
+        flush();
+    };
 }

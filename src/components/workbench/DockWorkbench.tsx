@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
     DockviewReact,
@@ -8,7 +7,7 @@ import {
 } from "dockview-react";
 import {
     restoreLayout,
-    saveLayout,
+    subscribeLayoutPersistence,
     type DockApi,
 } from "@/lib/dock-layout";
 
@@ -71,28 +70,7 @@ export function DockWorkbench({
 
     useEffect(() => {
         if (!api) return;
-
-        let timer: ReturnType<typeof setTimeout> | undefined;
-
-        const subscription = api.onDidLayoutChange(() => {
-            if (timer !== undefined) {
-                clearTimeout(timer);
-            }
-
-            timer = setTimeout(() => {
-                saveLayout(api);
-                timer = undefined;
-            }, 350);
-        });
-
-        return () => {
-            subscription.dispose();
-
-            if (timer !== undefined) {
-                clearTimeout(timer);
-                saveLayout(api);
-            }
-        };
+        return subscribeLayoutPersistence(api);
     }, [api]);
 
     return (
