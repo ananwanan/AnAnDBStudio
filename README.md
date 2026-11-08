@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.4 已集成到 `dev`（M0.4 为 [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)）。**M0.5.1–M0.5.5 已实现，并获得维护者本地验收通过确认**；验收代码提交为 [`3543627`](https://github.com/ananwanan/AnAnDBStudio/commit/3543627e87e97175ddbb828fa88a3a24219ceb3a)，[PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4) 尚未合并；实现提交的 [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42446066374) 已通过，文档分支最终 CI 仍待确认。见 [M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6 已进入规划**（[启动与跨平台验收计划](docs/acceptance/M0.6.md)）。真实 SQLite 连接、SQL 执行和数据编辑均未开始；`v0.1.0` 尚未发布。
+> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.5 已合并到 `dev`（M0.5 为 [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)）；[M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6.1–M0.6.2 已实现且 Windows/Ubuntu 四项 CI 检查通过**（[run 42447978668](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668)）。**M0.6.3 的 Windows Release 和 Linux 图形启动等 6 项由维护者报告全部通过**。M0.6.4 退出与异常恢复测试、M0.6.5 最终验收仍待完成，工作在 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5)。详见 [M0.6 验收记录](docs/acceptance/M0.6.md)。尚无真实 SQLite 连接、SQL 执行或数据编辑；`v0.1.0` 未发布。
 
 ## Product goals / 产品目标
 
@@ -128,10 +128,10 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.2** | Rust workspace, lint/format, test baseline, CI | `cargo fmt` / `cargo clippy` / tests + frontend checks run |
 | **M0.3** | shadcn/ui, Tailwind, theme tokens, dark/light mode | Theme remains consistent across components |
 | **M0.4** | Dockview explorer/editor/result layout | Tabs/panels work; layout can be saved/restored |
-| **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | Maintainer accepted; PR #4 integration pending |
-| **M0.6** | Startup, persistence, Windows/Linux acceptance | Planned: repeatable smoke-test evidence documented |
+| **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | Accepted and merged into `dev` (PR #4) |
+| **M0.6** | Startup, persistence, Windows/Linux acceptance | M0.6.1–M0.6.3 complete/maintainer-accepted; M0.6.4–M0.6.5 pending |
 
-**Current progress (2026-11-08):** M0.1–M0.4 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)). The owner reports M0.4 acceptance passed ([record](docs/acceptance/M0.4.md)). **M0.5.1–M0.5.5 are implemented and maintainer-accepted on `feat/m0-typed-ipc`** ([acceptance report](docs/acceptance/M0.5.md)); implementation CI [run 42446066374](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42446066374) passed; documentation-head CI/review and PR #4 integration remain pending. **M0.6 is planned, not yet implemented**, starting with deterministic startup and persistence smoke checks ([plan](docs/acceptance/M0.6.md)). Do not add SQLite CRUD during M0.
+**Current progress (2026-11-08):** M0.1–M0.5 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3), [PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4)). On M0.6 branch `feat/m0-startup-acceptance`, M0.6.1 Release build CI and M0.6.2 persistence regression coverage passed [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42447978668). Maintainer reports all six M0.6.3 Windows/Linux GUI and IPC/CSP acceptance cases passed ([record](docs/acceptance/M0.6.md)). M0.6.4 recovery and M0.6.5 closeout remain pending; [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) is open. Do not add SQLite CRUD during M0.
 
 ## Engineering invariants / 工程底线
 
@@ -160,7 +160,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Scaffolded application:** M0.1–M0.4 are integrated into `dev`. M0.5 is maintainer-accepted on `feat/m0-typed-ipc`, awaiting final CI/review and merge into `dev`; use that branch for the accepted IPC implementation until integrated. M0.6 is the next milestone; its implementation should branch from updated `dev` only after M0.5 integration. Install dependencies and launch the desktop shell:
+**Scaffolded application:** M0.1–M0.5 are integrated into `dev`. M0.6 work continues on `feat/m0-startup-acceptance` under [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5); M0.6.4/M0.6.5 are still outstanding. Install dependencies and launch the desktop shell:
 
 ```powershell
 pnpm install
