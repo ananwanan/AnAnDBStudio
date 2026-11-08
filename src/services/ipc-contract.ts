@@ -7,6 +7,36 @@ export interface AppInfo {
     readonly protocolVersion: number;
 }
 
+export interface SqliteConnectionInfo {
+    readonly id: string;
+    readonly path: string;
+    readonly readOnly: boolean;
+}
+
+export type SqliteSchemaObjectKind = "table" | "view" | "index" | "trigger";
+
+export interface SqliteSchemaColumn {
+    readonly cid: number;
+    readonly name: string;
+    readonly declaredType: string;
+    readonly notNull: boolean;
+    readonly defaultSql: string | null;
+    readonly primaryKeyPosition: number;
+    readonly hidden: number;
+}
+
+export interface SqliteSchemaObject {
+    readonly kind: SqliteSchemaObjectKind;
+    readonly name: string;
+    readonly tableName: string;
+    readonly columns: readonly SqliteSchemaColumn[];
+}
+
+export interface SqliteSchemaSnapshot {
+    readonly schema: "main";
+    readonly objects: readonly SqliteSchemaObject[];
+}
+
 export interface IpcCommands {
     get_app_info: {
         args: undefined;
@@ -18,6 +48,29 @@ export interface IpcCommands {
             readonly protocolVersion: number;
         };
         result: void;
+    };
+
+    open_sqlite_connection: {
+        args: {
+            readonly path: string;
+            readonly readOnly: boolean;
+        };
+        result: SqliteConnectionInfo;
+    };
+
+    list_sqlite_connections: {
+        args: undefined;
+        result: readonly SqliteConnectionInfo[];
+    };
+
+    close_sqlite_connection: {
+        args: { readonly id: string };
+        result: void;
+    };
+
+    get_sqlite_schema: {
+        args: { readonly id: string };
+        result: SqliteSchemaSnapshot;
     };
 }
 

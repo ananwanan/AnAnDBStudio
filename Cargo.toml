@@ -1,5 +1,5 @@
 [workspace]
-members = ["src-tauri"]
+members = ["src-tauri", "crates/anandb-driver-sqlite"]
 resolver = "3"
 
 [profile.release]

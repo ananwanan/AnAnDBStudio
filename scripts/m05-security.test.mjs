@@ -12,6 +12,10 @@ function read(path) {
 const commands = [
     "get_app_info",
     "check_ipc_protocol",
+    "open_sqlite_connection",
+    "list_sqlite_connections",
+    "close_sqlite_connection",
+    "get_sqlite_schema",
 ];
 
 test("only approved IPC commands are registered", () => {
@@ -25,7 +29,7 @@ test("only approved IPC commands are registered", () => {
 
     const registered = [
         ...handler[1].matchAll(
-            /commands::app_info::(\w+)/g,
+            /commands::(?:app_info|connections)::(\w+)/g,
         ),
     ].map((match) => match[1]);
 
