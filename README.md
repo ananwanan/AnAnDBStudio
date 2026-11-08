@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.4 已集成到 `dev`（M0.4 为 [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)）。**M0.5.1–M0.5.5 已实现，并获得维护者本地验收通过确认**；验收代码提交为 [`3543627`](https://github.com/ananwanan/AnAnDBStudio/commit/3543627e87e97175ddbb828fa88a3a24219ceb3a)，[PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4) 尚未合并，最终提交 CI 仍需核对完成结果。见 [M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6 已进入规划**（[启动与跨平台验收计划](docs/acceptance/M0.6.md)）。真实 SQLite 连接、SQL 执行和数据编辑均未开始；`v0.1.0` 尚未发布。
+> **项目状态（2026-11-08）：M0 基础建设进行中。** M0.1–M0.4 已集成到 `dev`（M0.4 为 [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)）。**M0.5.1–M0.5.5 已实现，并获得维护者本地验收通过确认**；验收代码提交为 [`3543627`](https://github.com/ananwanan/AnAnDBStudio/commit/3543627e87e97175ddbb828fa88a3a24219ceb3a)，[PR #4](https://github.com/ananwanan/AnAnDBStudio/pull/4) 尚未合并；实现提交的 [Windows/Ubuntu CI](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42446066374) 已通过，文档分支最终 CI 仍待确认。见 [M0.5 验收记录](docs/acceptance/M0.5.md)。**M0.6 已进入规划**（[启动与跨平台验收计划](docs/acceptance/M0.6.md)）。真实 SQLite 连接、SQL 执行和数据编辑均未开始；`v0.1.0` 尚未发布。
 
 ## Product goals / 产品目标
 
@@ -131,7 +131,7 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M0.5** | Typed Tauri IPC, shared errors, safe command boundary | Maintainer accepted; PR #4 integration pending |
 | **M0.6** | Startup, persistence, Windows/Linux acceptance | Planned: repeatable smoke-test evidence documented |
 
-**Current progress (2026-11-08):** M0.1–M0.4 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)). The owner reports M0.4 acceptance passed ([record](docs/acceptance/M0.4.md)). **M0.5.1–M0.5.5 are implemented and maintainer-accepted on `feat/m0-typed-ipc`** ([acceptance report](docs/acceptance/M0.5.md)); the final commit's Windows/Ubuntu CI and PR #4 integration must be completed before treating it as merged. **M0.6 is planned, not yet implemented**, starting with deterministic startup and persistence smoke checks ([plan](docs/acceptance/M0.6.md)). Do not add SQLite CRUD during M0.
+**Current progress (2026-11-08):** M0.1–M0.4 are integrated into `dev` ([PR #1](https://github.com/ananwanan/AnAnDBStudio/pull/1), [PR #2](https://github.com/ananwanan/AnAnDBStudio/pull/2), [PR #3](https://github.com/ananwanan/AnAnDBStudio/pull/3)). The owner reports M0.4 acceptance passed ([record](docs/acceptance/M0.4.md)). **M0.5.1–M0.5.5 are implemented and maintainer-accepted on `feat/m0-typed-ipc`** ([acceptance report](docs/acceptance/M0.5.md)); implementation CI [run 42446066374](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42446066374) passed; documentation-head CI/review and PR #4 integration remain pending. **M0.6 is planned, not yet implemented**, starting with deterministic startup and persistence smoke checks ([plan](docs/acceptance/M0.6.md)). Do not add SQLite CRUD during M0.
 
 ## Engineering invariants / 工程底线
 
