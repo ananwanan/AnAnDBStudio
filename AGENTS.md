@@ -9,7 +9,7 @@ This document defines repository-wide instructions for coding agents and contrib
 - Goal: a professional, cross-platform database management desktop application comparable in workflow ambition to Navicat and DBeaver.
 - Selected stack: **Tauri 2 + Rust (stable) + React + TypeScript + Vite**.
 - First supported database: **SQLite 3**. PostgreSQL and MySQL/MariaDB are planned for later milestones.
-- Historical note: development began as documentation-only on 2026-11-07. As of 2026-11-08, M0 PRs #1–#5 were merged into `dev`; the M0 GUI/recovery checks were maintainer-reported passed, and integrated Windows/Ubuntu CI succeeded. SQLite M1.1–M1.3/M1.5 backend was integrated via PR #6, with all four jobs successful on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 dialog/explorer was merged via PR #7; the maintainer reports local tests and functional verification passed. Integrated M1 final-head CI and desktop acceptance still require review. M2.1 Monaco SQL tabs are proposed on `feat/m2.1-monaco-sql-tabs`. See `docs/acceptance/M1.md`.
+- Historical note: development began as documentation-only on 2026-11-07. As of 2026-11-08, M0 PRs #1–#5 were merged into `dev`; the M0 GUI/recovery checks were maintainer-reported passed, and integrated Windows/Ubuntu CI succeeded. SQLite M1.1–M1.3/M1.5 backend was integrated via PR #6, with all four jobs successful on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 dialog/explorer was merged via PR #7; the maintainer reports local tests and functional verification passed. Integrated M1 final-head CI and desktop acceptance still require review. M2.1 Monaco SQL tabs are implemented on `feat/m2.1-monaco-sql-tabs`; 2026-11-09 Windows/Ubuntu CI (run 42638572278) passed all 4 jobs; GUI acceptance remains pending. See `docs/acceptance/M1.md`.
 - `README.md` is the product/roadmap source of truth. Do not mark planned features as implemented without evidence.
 
 ## 2. Roadmap and task boundaries
@@ -166,4 +166,4 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 
 ## 9. Immediate next action
 
-**M2.1 Monaco SQL editor tabs:** Review and validate the feature branch `feat/m2.1-monaco-sql-tabs` against `docs/acceptance/M2.1.md`. Keep this task frontend-only: no arbitrary SQL execution IPC or unbounded results until M2.2 has a safe query-job architecture. M1 final acceptance must still be recorded before M2 milestone sign-off.
+**M2.1 Monaco SQL editor tabs:** Review the feature branch `feat/m2.1-monaco-sql-tabs` against `docs/acceptance/M2.1.md` and collect the pending Windows/Linux GUI acceptance evidence. Automated CI has passed (run 42638572278). Keep this task frontend-only: no arbitrary SQL execution IPC or unbounded results until M2.2 has a safe query-job architecture. M1 final acceptance must still be recorded before M2 milestone sign-off.
