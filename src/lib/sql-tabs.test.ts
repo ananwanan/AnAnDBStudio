@@ -16,7 +16,7 @@ describe("SQL Dockview tabs", () => {
     const panels: Array<{ id: string; api: { setActive: ReturnType<typeof vi.fn> } }> = [
       { id: "welcome", api: { setActive: vi.fn() } },
     ];
-    const addPanel = vi.fn((config: { id: string }) => {
+    const addPanel = vi.fn((config: { id: string; position?: { referencePanel: string; direction: string } }) => {
       panels.push({ id: config.id, api: { setActive: vi.fn() } });
     });
     const removePanel = vi.fn((panel: { id: string }) => {
