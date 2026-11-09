@@ -13,7 +13,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
     ) !== null;
 }
 
-export function useWorkbenchShortcuts(api: DockApi | null) {
+export function useWorkbenchShortcuts(api: DockApi | null, onNewQuery?: () => void) {
     useEffect(() => {
         if (!api) return;
 
@@ -59,5 +59,5 @@ export function useWorkbenchShortcuts(api: DockApi | null) {
         return () => {
             window.removeEventListener("keydown", onKeyDown);
         };
-    }, [api]);
+    }, [api, onNewQuery]);
 }

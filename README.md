@@ -120,6 +120,14 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M9 — Advanced Tools** | SSH, ER diagrams, schema comparison, extension design | Security/performance review of advanced features |
 | **M10 — Release** | Windows/Linux/macOS packaging, signing, QA, release process | Release gates pass; **target v1.0.0** |
 
+### M2 breakdown / SQL IDE 拆分
+
+| Task | Deliverable | Current status |
+| --- | --- | --- |
+| **M2.1** | Monaco SQL editor, independent Dockview query tabs, per-tab connection binding and local draft recovery | Implemented on `feat/m2.1-monaco-sql-tabs`; [acceptance checklist](docs/acceptance/M2.1.md) awaits CI and desktop validation |
+| **M2.2** | Asynchronous per-connection SQL execution jobs and typed error/result protocol | Planned |
+| **M2.3+** | Multi-statement execution, query history and cancellation | Planned |
+
 ### M0 breakdown / 第一阶段拆分
 
 | Task | Deliverable | Acceptance |
@@ -141,7 +149,7 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M1.4** | Native connection dialog, workspace state, interactive schema explorer | [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) open; maintainer-reported local tests and GUI verification pass |
 | **M1.5** | Connection lifecycle and error hardening | Integrated via PR #6; backend CI passed |
 
-**Current progress (2026-11-08):** M0 is integrated and maintainer-accepted; M1.1–M1.3 and M1.5 are in `dev` via [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) with four successful Windows/Ubuntu checks on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 code is on `feat/m1.4-explorer`; maintainer reported all local tests and functional verification pass after TypeScript/Vitest fixes. PR #7 still requires final-head CI and merge before M1 integrated sign-off. [M1 acceptance overview](docs/acceptance/M1.md) and [M1.4 evidence](docs/acceptance/M1.4.md) distinguish user-reported checks from GitHub CI. M2 SQL execution remains out of scope.
+**Current progress (2026-11-08):** M0 is integrated and maintainer-accepted; M1.1–M1.3 and M1.5 are in `dev` via [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) with four successful Windows/Ubuntu checks on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 code was merged into `dev` through PR #7; maintainer reported local tests and functional verification passed. Integrated M1 sign-off still requires final-head CI/desktop acceptance evidence. [M1 acceptance overview](docs/acceptance/M1.md) and [M1.4 evidence](docs/acceptance/M1.4.md) distinguish user-reported checks from GitHub CI. M2.1 SQL editing has been proposed on `feat/m2.1-monaco-sql-tabs` (not yet accepted). M2 SQL execution remains out of scope.
 
 ## Engineering invariants / 工程底线
 
@@ -170,7 +178,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Desktop application:** For the M1.4 connection dialog and Explorer, check out `feat/m1.4-explorer` until [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) lands on `dev`. Existing databases can be opened through the desktop GUI; no SQL execution is implemented yet. Use the checked-in lockfiles:
+**Desktop application:** For SQLite connections and Explorer, use `dev`. To test the Monaco SQL editor and query tabs, check out `feat/m2.1-monaco-sql-tabs`. Existing databases can be opened through the desktop GUI; no SQL execution is implemented yet. Use the checked-in lockfiles:
 
 ```powershell
 pnpm install
