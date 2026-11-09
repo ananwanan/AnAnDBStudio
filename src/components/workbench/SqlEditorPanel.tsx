@@ -1,9 +1,10 @@
 import { Suspense, lazy, useState } from "react";
 import type { IDockviewPanelProps } from "dockview-react";
-import { FileCode2, Play } from "lucide-react";
+import { FileCode2, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSqliteWorkspace } from "@/stores/sqlite-workspace";
 import {
+  forgetSqlDraft,
   renameSqlDraft,
   setSqlDraftConnection,
   updateSqlDraftSql,
@@ -75,6 +76,21 @@ export function SqlEditorPanel({ api }: IDockviewPanelProps) {
         <Button variant="outline" size="sm" disabled title="M2.2 将接入异步 SQL 执行">
           <Play className="size-3.5" />
           执行（M2.2）
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label="删除当前查询草稿"
+          title="永久删除此查询草稿"
+          onClick={() => {
+            if (window.confirm("永久删除此 SQL 查询草稿？该操作无法撤销。")) {
+              forgetSqlDraft(draft.id);
+              api.close();
+            }
+          }}
+        >
+          <Trash2 className="size-3.5" />
+          删除草稿
         </Button>
       </div>
       {staleConnection && (
