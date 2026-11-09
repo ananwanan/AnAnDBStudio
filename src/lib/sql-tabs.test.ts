@@ -39,7 +39,7 @@ describe("SQL Dockview tabs", () => {
       renderer: "always",
       position: { referencePanel: "welcome", direction: "within" },
     });
-    expect(addPanel.mock.calls[1][0].position.referencePanel).toBe(a.id);
+    expect(addPanel.mock.calls[1][0].position?.referencePanel).toBe(a.id);
     openSqlTab(api, a);
     expect(addPanel).toHaveBeenCalledTimes(2);
     expect(panels.find((panel) => panel.id === a.id)!.api.setActive).toHaveBeenCalled();
