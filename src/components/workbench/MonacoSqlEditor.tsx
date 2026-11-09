@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor";
-import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker.js?worker";
 import { useTheme } from "@/components/theme-provider";
 
 type MonacoHost = typeof globalThis & {
