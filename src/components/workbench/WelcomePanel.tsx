@@ -23,7 +23,7 @@ export function WelcomePanel() {
                     </p>
 
                     <Badge variant="secondary">
-                        M0.3 — UI Foundation
+                        M2.1 — SQL Editor
                     </Badge>
                 </div>
 
@@ -41,7 +41,7 @@ export function WelcomePanel() {
 
                         <CardContent>
                             <p className="text-sm text-muted-foreground">
-                                SQLite database connection support is planned for M1.
+                                Open an existing SQLite database using the New Connection button, then browse its schema in Explorer.
                             </p>
                         </CardContent>
                     </Card>
@@ -59,7 +59,7 @@ export function WelcomePanel() {
 
                         <CardContent>
                             <p className="text-sm text-muted-foreground">
-                                The Monaco SQL editor is planned for M2.
+                                Use New Query to open independent Monaco SQL tabs. SQL execution will be added in M2.2.
                             </p>
                         </CardContent>
                     </Card>

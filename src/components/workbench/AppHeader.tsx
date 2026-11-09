@@ -10,21 +10,27 @@ import {
     X,
 } from "lucide-react";
 
-import type { WorkbenchPanelId } from "@/lib/workbench-panels";
+import type { ActivePanelKind, WorkbenchPanelId } from "@/lib/workbench-panels";
 
 const menus = ["文件", "编辑", "视图", "工具", "帮助"];
 
 interface AppHeaderProps {
     onNewConnection: () => void;
+    onNewQuery: () => void;
+    onRestoreQuery: () => void;
+    canRestoreQuery: boolean;
     onResetLayout: () => void;
     canResetLayout: boolean;
     onOpenPanel: (id: WorkbenchPanelId) => void;
     onCloseActivePanel: () => void;
-    activePanel: WorkbenchPanelId | null;
+    activePanel: ActivePanelKind;
 }
 
 export function AppHeader({
     onNewConnection,
+    onNewQuery,
+    onRestoreQuery,
+    canRestoreQuery,
     onResetLayout,
     canResetLayout,
     onOpenPanel,
@@ -61,9 +67,26 @@ export function AppHeader({
                     新建连接
                 </Button>
 
-                <Button className="shrink-0" size="sm" variant="outline" disabled>
+                <Button
+                    className="shrink-0"
+                    size="sm"
+                    variant={activePanel === "query" ? "default" : "outline"}
+                    disabled={!canResetLayout}
+                    onClick={onNewQuery}
+                    title="创建新的 SQL 编辑标签（Ctrl+N）"
+                >
                     <FileCode2 className="size-4" />
                     新建查询
+                </Button>
+                <Button
+                    className="shrink-0"
+                    size="sm"
+                    variant="ghost"
+                    disabled={!canRestoreQuery}
+                    onClick={onRestoreQuery}
+                    title="恢复最近关闭的 SQL 查询草稿"
+                >
+                    恢复查询
                 </Button>
                 <Button
                     className="shrink-0"
