@@ -72,6 +72,7 @@ export function DockWorkbench({ onApiReady, onNewConnection }: DockWorkbenchProp
         <DockviewReact
           className="anandb-dockview"
           theme={theme}
+          dndStrategy="pointer"
           components={components}
           onReady={handleReady}
         />
