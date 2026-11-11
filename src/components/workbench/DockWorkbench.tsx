@@ -42,7 +42,7 @@ export function DockWorkbench({ onApiReady, onNewConnection }: DockWorkbenchProp
   const components = useMemo(() => ({
     explorer: () => <ExplorerSidebar onNewConnection={onNewConnection} />,
     welcome: () => <WelcomePanel />,
-    results: () => <ResultsPanel />,
+    results: ResultsPanel,
     "sql-editor": SqlEditorPanel,
   }), [onNewConnection]);
   const [api, setApi] = useState<DockApi | null>(null);

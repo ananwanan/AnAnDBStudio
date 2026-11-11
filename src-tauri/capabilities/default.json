@@ -12,6 +12,9 @@
     "allow-list-sqlite-connections",
     "allow-close-sqlite-connection",
     "allow-get-sqlite-schema",
-    "dialog:allow-open"
+    "dialog:allow-open",
+    "allow-start-sqlite-query",
+    "allow-poll-sqlite-query",
+    "allow-cancel-sqlite-query"
   ]
 }

@@ -1,3 +1,4 @@
+import type { QueryJob } from "./query-protocol";
 
 export const IPC_PROTOCOL_VERSION = 1;
 
@@ -38,6 +39,10 @@ export interface SqliteSchemaSnapshot {
 }
 
 export interface IpcCommands {
+    start_sqlite_query: { args: { id: string; sql: string; timeoutMs: number }; result: string };
+    poll_sqlite_query: { args: { id: string; jobId: string }; result: QueryJob };
+    cancel_sqlite_query: { args: { id: string; jobId: string }; result: void };
+
     get_app_info: {
         args: undefined;
         result: AppInfo;

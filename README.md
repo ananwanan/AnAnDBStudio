@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-08）：M1.4 本地验收通过，等待 PR 集成。** M0 基础工程已由维护者验收，且 [PR #5](https://github.com/ananwanan/AnAnDBStudio/pull/5) 已合并到 `dev`；SQLite M1.1–M1.3/M1.5 后端通过 [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) 合并。`dev` 的 [Windows/Ubuntu CI 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461) 四项通过。M1.4 的连接窗口、原生文件选择和 Schema Explorer 已推送至 [`feat/m1.4-explorer`](https://github.com/ananwanan/AnAnDBStudio/tree/feat/m1.4-explorer)，维护者报告本地测试与功能验证通过；[PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) 尚待合入 `dev`，PR CI 结果应以 GitHub Actions 最新运行状态为准。详情见 [M1.4 验收记录](docs/acceptance/M1.4.md)。尚未实现 SQL 执行、数据编辑或发布 `v0.1.0`。
+> **项目状态（2026-11-11）：M2 SQL IDE 已实现，等待最终验收。** M0/M1 及 M2.1 已合入 `dev`。M2.2–M2.4 在 `feat/m2-sql-execution` 补齐连接级工作线程、多语句执行、逐语句预览、错误定位、取消/超时、会话查询历史和快捷键。自动化验证及待验收项见 [M2 验收记录](docs/acceptance/M2.md)。M1/M2 的 Windows/Linux GUI 最终验收仍需记录，尚未发布 `v0.1.0`。
 
 ## Product goals / 产品目标
 
@@ -124,9 +124,10 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 
 | Task | Deliverable | Current status |
 | --- | --- | --- |
-| **M2.1** | Monaco SQL editor, independent Dockview query tabs, per-tab connection binding and local draft recovery | Implemented on `feat/m2.1-monaco-sql-tabs`; [CI 42638572278](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42638572278) passed (4/4); [desktop acceptance](docs/acceptance/M2.1.md) pending |
-| **M2.2** | Asynchronous per-connection SQL execution jobs and typed error/result protocol | Planned |
-| **M2.3+** | Multi-statement execution, query history and cancellation | Planned |
+| **M2.1** | Monaco SQL editor, independent Dockview query tabs, per-tab connection binding and local draft recovery | Integrated into `dev` via PR #8; [desktop acceptance](docs/acceptance/M2.1.md) pending |
+| **M2.2** | Asynchronous per-connection SQL execution jobs and typed error/result protocol | Implemented; bounded worker result slots and validated IPC |
+| **M2.3** | Multi-statement execution, UTF-16 error locations, cancellation and timeout | Implemented; stop-on-error, rollback of open transactions |
+| **M2.4** | Result preview, session history, Ctrl/Cmd+Enter, platform acceptance | Implemented; [automated evidence and pending GUI checks](docs/acceptance/M2.md) |
 
 ### M0 breakdown / 第一阶段拆分
 
@@ -149,7 +150,7 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M1.4** | Native connection dialog, workspace state, interactive schema explorer | [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) open; maintainer-reported local tests and GUI verification pass |
 | **M1.5** | Connection lifecycle and error hardening | Integrated via PR #6; backend CI passed |
 
-**Current progress (2026-11-09):** M0 is integrated and maintainer-accepted; M1.1–M1.3 and M1.5 are in `dev` via [PR #6](https://github.com/ananwanan/AnAnDBStudio/pull/6) with four successful Windows/Ubuntu checks on [run 42483034461](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42483034461). M1.4 code was merged into `dev` through PR #7; maintainer reported local tests and functional verification passed. Integrated M1 sign-off still requires final-head CI/desktop acceptance evidence. [M1 acceptance overview](docs/acceptance/M1.md) and [M1.4 evidence](docs/acceptance/M1.4.md) distinguish user-reported checks from GitHub CI. M2.1 SQL editing is implemented on `feat/m2.1-monaco-sql-tabs` with automated Windows/Ubuntu CI passing ([run 42638572278](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42638572278)); desktop GUI acceptance and PR review remain open. M2 SQL execution remains out of scope.
+**Current progress (2026-11-11):** M0/M1/M2.1 are integrated in `dev`; M2 execution and UI implementation is on `feat/m2-sql-execution`. See [M1 acceptance](docs/acceptance/M1.md), [M2.1 acceptance](docs/acceptance/M2.1.md), and [M2 acceptance](docs/acceptance/M2.md). Implementation completion does not replace pending desktop acceptance.
 
 ## Engineering invariants / 工程底线
 
@@ -178,7 +179,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Desktop application:** For SQLite connections and Explorer, use `dev`. To test the Monaco SQL editor and query tabs, check out `feat/m2.1-monaco-sql-tabs`. Existing databases can be opened through the desktop GUI; no SQL execution is implemented yet. Use the checked-in lockfiles:
+**Desktop application:** To test the complete M2 implementation, check out `feat/m2-sql-execution`. Open an existing database, bind a SQL tab, and use Ctrl/Cmd+Enter to execute the selection or whole script. Read-write connections require confirmation. Use the checked-in lockfiles:
 
 ```powershell
 pnpm install

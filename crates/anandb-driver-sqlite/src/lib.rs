@@ -10,7 +10,9 @@ use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, OpenFlags};
 
+pub mod query;
 pub mod schema;
+pub mod worker;
 pub use schema::{SchemaColumn, SchemaObject, SchemaObjectKind, SchemaSnapshot};
 
 /// The caller must explicitly select whether writes are permitted.
@@ -264,5 +266,61 @@ mod tests {
 
         let result = SqliteDatabase::open_existing(&fixture.database, OpenMode::ReadOnly);
         assert!(matches!(result, Err(SqliteError::Database(_))));
+    }
+    #[test]
+    fn query_jobs_enforce_read_only_and_preserve_wal_foreign_keys() {
+        use crate::query::execute;
+        use std::sync::{Arc, atomic::AtomicBool};
+        let fixture = Fixture::new();
+        let mut ro = SqliteDatabase::open_existing(&fixture.database, OpenMode::ReadOnly).unwrap();
+        crate::query::configure(&mut ro.connection).unwrap();
+        let result = execute(
+            &mut ro.connection,
+            "INSERT INTO items(name) VALUES('blocked')",
+            Arc::new(AtomicBool::new(false)),
+            5000,
+        );
+        assert_eq!(result.status, "failed");
+        ro.close().unwrap();
+        let mut rw = SqliteDatabase::open_existing(&fixture.database, OpenMode::ReadWrite).unwrap();
+        crate::query::configure(&mut rw.connection).unwrap();
+        let result = execute(
+            &mut rw.connection,
+            "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; CREATE TABLE child(parent INTEGER REFERENCES items(id)); INSERT INTO child VALUES(999);",
+            Arc::new(AtomicBool::new(false)),
+            5000,
+        );
+        assert_eq!(result.status, "failed");
+        assert_eq!(result.statements.len(), 3);
+        assert_eq!(
+            rw.connection
+                .query_row("PRAGMA journal_mode", [], |r| r.get::<_, String>(0))
+                .unwrap(),
+            "wal"
+        );
+        rw.close().unwrap();
+    }
+
+    #[test]
+    fn timed_out_write_does_not_leave_partial_insert() {
+        use crate::query::execute;
+        use std::sync::{Arc, atomic::AtomicBool};
+        let fixture = Fixture::new();
+        let mut db = SqliteDatabase::open_existing(&fixture.database, OpenMode::ReadWrite).unwrap();
+        crate::query::configure(&mut db.connection).unwrap();
+        let result = execute(
+            &mut db.connection,
+            "WITH RECURSIVE a(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM a) INSERT INTO items(name) SELECT 'pending' FROM a",
+            Arc::new(AtomicBool::new(false)),
+            5,
+        );
+        assert_eq!(result.status, "timedOut");
+        assert_eq!(
+            db.connection
+                .query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        db.close().unwrap();
     }
 }

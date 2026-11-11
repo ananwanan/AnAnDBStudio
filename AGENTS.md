@@ -166,4 +166,4 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 
 ## 9. Immediate next action
 
-**M2.1 Monaco SQL editor tabs:** Review the feature branch `feat/m2.1-monaco-sql-tabs` against `docs/acceptance/M2.1.md` and collect the pending Windows/Linux GUI acceptance evidence. Automated CI has passed (run 42638572278). Keep this task frontend-only: no arbitrary SQL execution IPC or unbounded results until M2.2 has a safe query-job architecture. M1 final acceptance must still be recorded before M2 milestone sign-off.
+**M2 milestone acceptance:** M2.1 is integrated into `dev` via PR #8. The authorized M2.2–M2.4 implementation is on `feat/m2-sql-execution`: connection-owned workers, bounded SQL previews, cancellation, timeout, history and editor/result integration. Review `docs/acceptance/M2.md` and collect the remaining Windows/Linux GUI and M1 final acceptance evidence before milestone sign-off. M3 full data browsing/virtualization and M4 editing remain separate milestones.

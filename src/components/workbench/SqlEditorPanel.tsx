@@ -1,3 +1,5 @@
+import { openWorkbenchPanel } from "@/lib/workbench-panels";
+import { cancelExecution, executeSql, selectExecution, useSqlExecution } from "@/stores/sql-execution";
 import { Suspense, lazy, useState } from "react";
 import type { IDockviewPanelProps } from "dockview-react";
 import { FileCode2, Play, Trash2 } from "lucide-react";
@@ -16,10 +18,14 @@ const MonacoSqlEditor = lazy(async () => {
   return { default: module.MonacoSqlEditor };
 });
 
-export function SqlEditorPanel({ api }: IDockviewPanelProps) {
+export function SqlEditorPanel({ api, containerApi }: IDockviewPanelProps) {
   const { drafts, persistenceError } = useSqlDrafts();
   const { connections } = useSqliteWorkspace();
   const draft = drafts.find((entry) => entry.id === api.id);
+  const executionState = useSqlExecution();
+  const execution = executionState.executions[api.id];
+  const [selection, setSelection] = useState({ sql: "", offset: 0 });
+  const [timeoutMs, setTimeoutMs] = useState(30000);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
 
   if (!draft) {
@@ -27,6 +33,16 @@ export function SqlEditorPanel({ api }: IDockviewPanelProps) {
   }
   const connection = connections.find((item) => item.id === draft.connectionId);
   const staleConnection = draft.connectionId !== null && !connection;
+
+  const busy = Object.values(executionState.executions).some(item => item.running && item.connectionId === draft.connectionId);
+  const run = (sql = selection.sql || draft.sql, offset = selection.sql ? selection.offset : 0) => {
+    if (!connection || busy || !sql.trim()) return;
+    if (!connection.readOnly && !window.confirm("将在读写连接执行 SQL，可能修改或删除数据。未显式 BEGIN 的写入会自动提交，取消不能撤销已提交的修改。继续执行？")) return;
+    void executeSql(draft.id, connection.id, sql, timeoutMs, draft.sql, offset);
+    if (containerApi) openWorkbenchPanel(containerApi, "results");
+  };
+  const marker = execution?.result?.error && execution.sourceSql === draft.sql
+    ? { ...execution.result.error, offset: execution.selectionOffset + execution.result.error.offset } : null;
 
   const saveTitle = () => {
     if (editingTitle !== null) {
@@ -63,6 +79,7 @@ export function SqlEditorPanel({ api }: IDockviewPanelProps) {
           aria-label="查询目标连接"
           className="max-w-56 rounded border bg-background px-2 py-1 text-xs"
           value={draft.connectionId ?? ""}
+          disabled={execution?.running}
           onChange={(event) => setSqlDraftConnection(draft.id, event.target.value || null)}
         >
           <option value="">未绑定</option>
@@ -73,13 +90,18 @@ export function SqlEditorPanel({ api }: IDockviewPanelProps) {
             </option>
           ))}
         </select>
-        <Button variant="outline" size="sm" disabled title="M2.2 将接入异步 SQL 执行">
-          <Play className="size-3.5" />
-          执行（M2.2）
+        <Button variant="outline" size="sm" disabled={!connection || busy || !draft.sql.trim()} onClick={() => run()} title="Ctrl/Cmd+Enter：执行选中 SQL，无选区则执行全部">
+          <Play className="size-3.5" />执行{selection.sql ? "选中" : "全部"}
         </Button>
+        <Button variant="outline" size="sm" disabled={!execution?.running || execution.cancelRequested} onClick={() => void cancelExecution(draft.id)}>取消</Button>
+        <select aria-label="查询超时" className="rounded border bg-background px-1 py-1 text-xs" value={timeoutMs} onChange={e => setTimeoutMs(Number(e.target.value))}>
+          <option value={5000}>5 秒</option><option value={30000}>30 秒</option><option value={300000}>5 分钟</option>
+        </select>
+        {execution && <Button variant="ghost" size="sm" onClick={() => { selectExecution(draft.id); if (containerApi) openWorkbenchPanel(containerApi, "results"); }}>查看结果</Button>}
         <Button
           variant="ghost"
           size="sm"
+          disabled={execution?.running}
           aria-label="删除当前查询草稿"
           title="永久删除此查询草稿"
           onClick={() => {
@@ -109,12 +131,15 @@ export function SqlEditorPanel({ api }: IDockviewPanelProps) {
             id={draft.id}
             value={draft.sql}
             onChange={(sql) => updateSqlDraftSql(draft.id, sql)}
+            onRun={run}
+            onSelection={(sql, offset) => setSelection({ sql, offset })}
+            error={marker}
           />
         </Suspense>
       </div>
       <footer className="flex shrink-0 items-center justify-between border-t bg-card px-3 py-1 text-[11px] text-muted-foreground">
         <span>SQL · SQLite{connection ? ` · ${connection.readOnly ? "只读" : "读写"}` : " · 未连接"}</span>
-        <span>本地草稿自动保存 · 尚未接入 SQL 执行</span>
+        <span>{execution?.running ? (execution.cancelRequested ? "正在请求取消…" : "正在执行…") : "本地草稿自动保存 · Ctrl/Cmd+Enter 执行"}</span>
       </footer>
     </section>
   );
