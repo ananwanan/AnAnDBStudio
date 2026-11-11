@@ -19,6 +19,10 @@ const commands = [
     "start_sqlite_query",
     "poll_sqlite_query",
     "cancel_sqlite_query",
+    "open_sqlite_table_result",
+    "get_sqlite_result_page",
+    "close_sqlite_result",
+    "export_sqlite_selection",
 ];
 
 test("only approved IPC commands are registered", () => {
@@ -32,7 +36,7 @@ test("only approved IPC commands are registered", () => {
 
     const registered = [
         ...handler[1].matchAll(
-            /commands::(?:app_info|connections)::(\w+)/g,
+            /commands::(?:app_info|connections|export)::(\w+)/g,
         ),
     ].map((match) => match[1]);
 

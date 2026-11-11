@@ -5,7 +5,10 @@ use tauri::State;
 
 use crate::connections::{ConnectionInfo, ConnectionManager};
 use crate::error::{AppError, AppErrorCode};
-use anandb_driver_sqlite::SchemaSnapshot;
+use anandb_driver_sqlite::{
+    SchemaSnapshot,
+    browse::{Page, ResultInfo, TableRequest},
+};
 
 #[tauri::command]
 pub async fn open_sqlite_connection(
@@ -61,8 +64,9 @@ pub async fn start_sqlite_query(
     id: String,
     sql: String,
     timeout_ms: u64,
+    capture: Option<bool>,
 ) -> Result<String, AppError> {
-    manager.start_query(id, sql, timeout_ms)
+    manager.start_query(id, sql, timeout_ms, capture.unwrap_or(false))
 }
 #[tauri::command]
 pub async fn poll_sqlite_query(
@@ -79,4 +83,43 @@ pub async fn cancel_sqlite_query(
     job_id: String,
 ) -> Result<(), AppError> {
     manager.cancel_query(id, job_id)
+}
+
+#[tauri::command]
+pub async fn open_sqlite_table_result(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    request: TableRequest,
+    timeout_ms: u64,
+) -> Result<ResultInfo, AppError> {
+    let manager = Arc::clone(manager.inner());
+    tauri::async_runtime::spawn_blocking(move || manager.open_table(id, request, timeout_ms))
+        .await
+        .map_err(|_| worker_error())?
+}
+
+#[tauri::command]
+pub async fn get_sqlite_result_page(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    session_id: String,
+    offset: usize,
+    limit: usize,
+    timeout_ms: u64,
+) -> Result<Page, AppError> {
+    let manager = Arc::clone(manager.inner());
+    tauri::async_runtime::spawn_blocking(move || {
+        manager.result_page(id, session_id, offset, limit, timeout_ms)
+    })
+    .await
+    .map_err(|_| worker_error())?
+}
+
+#[tauri::command]
+pub async fn close_sqlite_result(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    session_id: String,
+) -> Result<(), AppError> {
+    manager.close_result(id, session_id)
 }

@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
+use anandb_driver_sqlite::browse::{BrowseError, BrowseErrorKind, Page, ResultInfo, TableRequest};
 use anandb_driver_sqlite::{OpenMode, SchemaSnapshot, SqliteDatabase, SqliteError};
 use serde::Serialize;
 
@@ -129,9 +130,10 @@ impl ConnectionManager {
         id: String,
         sql: String,
         timeout_ms: u64,
+        capture: bool,
     ) -> Result<String, AppError> {
         self.worker(&id)?
-            .start(sql, timeout_ms)
+            .start(sql, timeout_ms, capture)
             .map_err(query_error)
     }
     pub fn poll_query(
@@ -143,6 +145,36 @@ impl ConnectionManager {
     }
     pub fn cancel_query(&self, id: String, job_id: String) -> Result<(), AppError> {
         self.worker(&id)?.cancel(&job_id).map_err(query_error)
+    }
+
+    pub fn open_table(
+        &self,
+        id: String,
+        request: TableRequest,
+        timeout_ms: u64,
+    ) -> Result<ResultInfo, AppError> {
+        self.worker(&id)?
+            .open_table(request, timeout_ms)
+            .map_err(browse_error)
+    }
+
+    pub fn result_page(
+        &self,
+        id: String,
+        session_id: String,
+        offset: usize,
+        limit: usize,
+        timeout_ms: u64,
+    ) -> Result<Page, AppError> {
+        self.worker(&id)?
+            .result_page(&session_id, offset, limit, timeout_ms)
+            .map_err(browse_error)
+    }
+
+    pub fn close_result(&self, id: String, session_id: String) -> Result<(), AppError> {
+        self.worker(&id)?
+            .close_result(&session_id)
+            .map_err(browse_error)
     }
 
     /// Removes the connection from the registry before closing its handle.
@@ -173,6 +205,18 @@ fn parse_connection_id(id: &str) -> Result<u64, AppError> {
         .filter(|part| !part.is_empty() && !part.starts_with('0'))
         .and_then(|part| part.parse::<u64>().ok())
         .ok_or_else(|| AppError::new(AppErrorCode::InvalidArgument, "Invalid connection id"))
+}
+
+fn browse_error(error: BrowseError) -> AppError {
+    let code = match error.kind {
+        BrowseErrorKind::Invalid => AppErrorCode::InvalidArgument,
+        BrowseErrorKind::Expired => AppErrorCode::ResultExpired,
+        BrowseErrorKind::Busy => AppErrorCode::ConnectionBusy,
+        BrowseErrorKind::Cancelled => AppErrorCode::ResultCancelled,
+        BrowseErrorKind::TimedOut => AppErrorCode::ResultTimedOut,
+        BrowseErrorKind::Failed => AppErrorCode::QueryFailed,
+    };
+    AppError::new(code, error.message)
 }
 
 fn query_error(message: String) -> AppError {
@@ -330,7 +374,7 @@ mod tests {
         let registry = ConnectionManager::default();
         let first = registry.open_existing(fixture.path(), false).unwrap();
         let second = registry.open_existing(fixture.path(), true).unwrap();
-        let job = registry.start_query(first.id.clone(), "WITH RECURSIVE a(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM a) SELECT sum(x) FROM a".into(), 300000).unwrap();
+        let job = registry.start_query(first.id.clone(), "WITH RECURSIVE a(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM a) SELECT sum(x) FROM a".into(), 300000, false).unwrap();
         assert_eq!(registry.list().unwrap().len(), 2);
         assert!(registry.schema(second.id.clone()).is_ok());
         assert!(
@@ -344,7 +388,7 @@ mod tests {
         registry.close(first.id.clone()).unwrap();
         assert_eq!(
             registry
-                .start_query(first.id, "SELECT 1".into(), 1000)
+                .start_query(first.id, "SELECT 1".into(), 1000, false)
                 .unwrap_err()
                 .code,
             AppErrorCode::ConnectionNotFound

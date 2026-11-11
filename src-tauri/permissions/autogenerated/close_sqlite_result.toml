@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-close-sqlite-result"
+description = "Enables the close_sqlite_result command without any pre-configured scope."
+commands.allow = ["close_sqlite_result"]
+
+[[permission]]
+identifier = "deny-close-sqlite-result"
+description = "Denies the close_sqlite_result command without any pre-configured scope."
+commands.deny = ["close_sqlite_result"]
