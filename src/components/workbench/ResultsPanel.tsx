@@ -1,3 +1,4 @@
+import { openDataTab } from "@/lib/data-tabs";
 import type { IDockviewPanelProps } from "dockview-react";
 import { openSqlTab } from "@/lib/sql-tabs";
 import { useState } from "react";
@@ -17,6 +18,7 @@ export function ResultsPanel({ containerApi }: IDockviewPanelProps) {
   const { executions, selectedId, history } = useSqlExecution();
   const { drafts } = useSqlDrafts();
   const [statementIndex, setStatementIndex] = useState(0);
+  const [openError, setOpenError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const item = selectedId ? executions[selectedId] : undefined;
   const result = item?.result;
@@ -35,12 +37,24 @@ export function ResultsPanel({ containerApi }: IDockviewPanelProps) {
       {result?.error && <p role="alert" className="whitespace-pre-wrap break-all text-destructive">第 {result.error.statementIndex + 1} 条语句：{result.error.message}</p>}
       {result?.transactionOpen && <p className="text-amber-600">此连接有未提交事务，请执行 COMMIT 或 ROLLBACK；关闭连接将回滚。</p>}
       {result?.rolledBack && <p>发生错误时仍打开的事务已回滚。</p>}
-      {result && <p className="my-1 text-muted-foreground">已提交的写入不会因后续错误或取消而撤销。预览只读，每条最多 200 行；完整数据浏览将在 M3 提供。</p>}
+      {result && <p className="my-1 text-muted-foreground">已提交的写入不会因后续错误或取消而撤销。预览只读，每条最多 200 行。执行前可启用“保留完整结果”。</p>}
+      {openError && <p role="alert" className="text-destructive">{openError}</p>}
       {statement && <>
         <label>语句 <select aria-label="语句结果" className="rounded border bg-background p-1" value={statement.index} onChange={e => setStatementIndex(Number(e.target.value))}>
           {result?.statements.map(s => <option key={s.index} value={s.index}>#{s.index + 1} · {s.rows.length} 行预览 · 影响 {s.affectedRows} 行</option>)}
         </select></label>
-        {statement.truncated && <p className="text-amber-600">结果已达到预览上限，使用 LIMIT 或缩小查询范围查看其他数据。</p>}
+        {statement.fullResult && item && <Button size="xs" variant="outline" className="my-1 w-fit" onClick={() => {
+          if (!statement.fullResult) return;
+          setOpenError(null);
+          try {
+            openDataTab(containerApi, { kind: "query", connectionId: item.connectionId, info: statement.fullResult },
+              `${drafts.find(draft => draft.id === item.draftId)?.title ?? "Query"} · #${statement.index + 1}`);
+          } catch (error) {
+            setOpenError(error instanceof Error ? error.message : "无法打开结果标签");
+          }
+        }}>打开数据标签 · {statement.fullResult.rowCount} 行</Button>}
+        {statement.fullResultError && <p className="text-amber-600">{statement.fullResultError}</p>}
+        {statement.truncated && <p className="text-amber-600">结果已达到预览上限。</p>}
         {!!statement.columns.length && <div className="my-2 max-h-72 overflow-auto border"><table className="w-full border-collapse text-left">
           <thead className="sticky top-0 bg-card"><tr>{statement.columns.map((name, i) => <th key={i} className="border p-1">{name}</th>)}</tr></thead>
           <tbody>{statement.rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} title={display(cell)} className="max-w-80 truncate border p-1 font-mono">{display(cell)}</td>)}</tr>)}</tbody>

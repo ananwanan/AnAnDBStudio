@@ -39,9 +39,17 @@ export function loadSavedLayout(): DockLayout | null {
 
 export function saveLayout(api: DockApi): void {
     try {
+        const layout = api.toJSON();
+        for (const panel of Object.values(layout.panels ?? {})) {
+            if (panel.contentComponent === "data-result") {
+                // Preserve the layout shape without saving session or database metadata.
+                delete panel.params;
+                delete panel.title;
+            }
+        }
         const data: StoredLayout = {
             version: 1,
-            layout: api.toJSON(),
+            layout,
         };
 
         localStorage.setItem(
@@ -82,6 +90,7 @@ export function createDefaultLayout(api: DockApi): void {
         id: "results",
         component: "results",
         title: "Results",
+        initialHeight: 142,
         position: {
             referencePanel: "welcome",
             direction: "below",

@@ -1,3 +1,4 @@
+import { decodeResultInfo, decodeResultPage } from "./browse-protocol";
 import { decodeQueryId, decodeQueryJob } from "./query-protocol";
 
 import { invoke } from "@tauri-apps/api/core";
@@ -25,7 +26,12 @@ export type BackendErrorCode =
     | "CONNECTION_LIMIT_REACHED"
     | "SCHEMA_READ_FAILED"
     | "SCHEMA_TOO_LARGE"
-    | "QUERY_FAILED";
+    | "QUERY_FAILED"
+    | "CONNECTION_BUSY"
+    | "RESULT_EXPIRED"
+    | "RESULT_CANCELLED"
+    | "RESULT_TIMED_OUT"
+    | "EXPORT_FAILED";
 
 export type IpcErrorCode =
     | BackendErrorCode
@@ -43,6 +49,11 @@ const BACKEND_ERROR_CODES: ReadonlySet<string> = new Set([
     "SCHEMA_READ_FAILED",
     "SCHEMA_TOO_LARGE",
     "QUERY_FAILED",
+    "CONNECTION_BUSY",
+    "RESULT_EXPIRED",
+    "RESULT_CANCELLED",
+    "RESULT_TIMED_OUT",
+    "EXPORT_FAILED",
 ]);
 
 export class IpcError extends Error {
@@ -284,6 +295,13 @@ const RESPONSE_DECODERS: {
     start_sqlite_query: (value) => decodeQueryResponse(() => decodeQueryId(value)),
     poll_sqlite_query: (value) => decodeQueryResponse(() => decodeQueryJob(value)),
     cancel_sqlite_query: decodeVoid,
+    open_sqlite_table_result: (value) => decodeQueryResponse(() => decodeResultInfo(value)),
+    get_sqlite_result_page: (value) => decodeQueryResponse(() => decodeResultPage(value)),
+    close_sqlite_result: decodeVoid,
+    export_sqlite_selection: (value) => {
+        if (typeof value !== "boolean") throw new IpcError("INVALID_RESPONSE", "Invalid selection export response");
+        return value;
+    },
     get_app_info: decodeAppInfo,
     check_ipc_protocol: decodeVoid,
     open_sqlite_connection: decodeSqliteConnectionInfo,

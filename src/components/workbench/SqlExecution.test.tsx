@@ -23,9 +23,11 @@ it("executes selected SQL with its source offset using button and keyboard callb
   await waitFor(() => expect(screen.getByText("select SQL")).toBeDefined());
   fireEvent.click(screen.getByText("select SQL"));
   fireEvent.click(screen.getByRole("button", { name: "执行选中" }));
-  expect(execute).toHaveBeenCalledWith(draft.id, "sqlite-1", "SELECT 2", 30000, "SELECT 1; SELECT 2", 10);
+  expect(execute).toHaveBeenCalledWith(draft.id, "sqlite-1", "SELECT 2", 30000, "SELECT 1; SELECT 2", 10, false);
+  fireEvent.click(screen.getByRole("checkbox", { name: "保留完整结果" }));
   fireEvent.click(screen.getByText("shortcut"));
   expect(execute).toHaveBeenCalledTimes(2);
+  expect(execute).toHaveBeenLastCalledWith(draft.id, "sqlite-1", "SELECT 2", 30000, "SELECT 1; SELECT 2", 10, true);
 });
 it("requires explicit confirmation on read-write connections", () => {
   mount("sqlite-2");

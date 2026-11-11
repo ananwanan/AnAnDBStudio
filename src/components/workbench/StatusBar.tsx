@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { CheckCircle2, Database } from "lucide-react";
 
+import { useSqliteWorkspace } from "@/stores/sqlite-workspace";
 import { getAppInfo } from "@/services/app-info";
 
 type IpcStatus =
@@ -11,6 +12,8 @@ type IpcStatus =
   | { state: "error" };
 
 export function StatusBar() {
+  const { connections, selectedId } = useSqliteWorkspace();
+  const selected = connections.find(connection => connection.id === selectedId);
   const [ipc, setIpc] = useState<IpcStatus>(() => ({
     state: isTauri() ? "connecting" : "browser",
   }));
@@ -49,14 +52,14 @@ export function StatusBar() {
         <CheckCircle2 className="size-3.5" />
         <span>Ready</span>
         <span>·</span>
-        <span>未连接数据库</span>
+        <span className="max-w-36 truncate" title={selected?.path}>{selected?.path.split(/[/\\]/).pop() ?? "未连接数据库"}</span>
         <span>·</span>
         <span role="status">{ipcLabel}</span>
       </div>
 
       <div className="flex items-center gap-2">
         <Database className="size-3.5" />
-        <span>SQLite · M1 Planned</span>
+        <span>SQLite</span>
       </div>
     </footer>
   );

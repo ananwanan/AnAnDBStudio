@@ -1,9 +1,10 @@
+import { isDataTab } from "./data-tabs";
 import type { DockApi } from "./dock-layout";
 import { isSqlPanelId } from "./sql-tabs";
 
 export const PANEL_IDS = ["explorer", "welcome", "results"] as const;
 export type WorkbenchPanelId = (typeof PANEL_IDS)[number];
-export type ActivePanelKind = WorkbenchPanelId | "query" | null;
+export type ActivePanelKind = WorkbenchPanelId | "query" | "data" | null;
 
 export interface PanelSnapshot {
   opened: Record<WorkbenchPanelId, boolean>;
@@ -19,6 +20,7 @@ const PANEL_CONFIG = {
 export function panelKind(id: string | undefined): ActivePanelKind {
   if (!id) return null;
   if (isSqlPanelId(id)) return "query";
+  if (isDataTab(id)) return "data";
   return PANEL_IDS.find((item) => item === id) ?? null;
 }
 

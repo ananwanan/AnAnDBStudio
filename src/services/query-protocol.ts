@@ -1,13 +1,15 @@
-export type QueryCell = { type: "null" } | {
-  type: "integer" | "real" | "text" | "blob" | "textBytes";
-  value: string;
-};
+import { decodeResultInfo, type ResultInfo } from "./browse-protocol";
+import { decimal, decodeCell, isRecord as record, isUint as uint, text, type QueryCell } from "./result-values";
+
+export type { QueryCell } from "./result-values";
 export interface StatementResult {
   index: number;
   columns: string[];
   rows: QueryCell[][];
   affectedRows: string;
   truncated: boolean;
+  fullResult?: ResultInfo;
+  fullResultError?: string;
 }
 export interface QueryResult {
   statements: StatementResult[];
@@ -18,22 +20,6 @@ export interface QueryResult {
   rolledBack: boolean;
 }
 export interface QueryJob { id: string; result: QueryResult | null }
-const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
-const uint = (v: unknown): v is number => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
-const text = (v: unknown): v is string => typeof v === "string";
-const decimal = (v: unknown): v is string => text(v) && /^\d+$/.test(v) && v.length <= 20;
-function validCell(v: unknown): boolean {
-  if (!record(v)) return false;
-  if (v.type === "null") return true;
-  if (!text(v.value) || v.value.length > 32768) return false;
-  switch (v.type) {
-    case "integer": return /^-?\d+$/.test(v.value) && BigInt(v.value) >= -(1n << 63n) && BigInt(v.value) < (1n << 63n);
-    case "real": return /^(?:-?inf|NaN)$/.test(v.value) || (v.value.trim() !== "" && Number.isFinite(Number(v.value)));
-    case "text": return true;
-    case "blob": case "textBytes": return /^(?:[0-9a-f]{2})*$/.test(v.value);
-    default: return false;
-  }
-}
 export function decodeQueryId(v: unknown): string {
   if (!decimal(v) || v === "0") throw new Error("Invalid query job identifier");
   return v;
@@ -50,11 +36,21 @@ export function decodeQueryJob(v: unknown): QueryJob {
       uint(r.error.statementIndex) && r.error.statementIndex <= 100 && uint(r.error.offset) && r.error.offset <= 262144)) ||
     (r.status === "completed") !== (r.error === null)) throw new Error("Invalid query result");
   for (const [index, s] of r.statements.entries()) {
-    if (!record(s) || s.index !== index || !Array.isArray(s.columns) || s.columns.length > 128 ||
+    if (!record(s) || s.index !== index || !Array.isArray(s.columns) || s.columns.length > 2048 ||
       !s.columns.every(text) || !Array.isArray(s.rows) || s.rows.length > 200 ||
       !decimal(s.affectedRows) || typeof s.truncated !== "boolean" ||
-      !s.rows.every(row => Array.isArray(row) && row.length === (s.columns as unknown[]).length && row.every(validCell))) {
+      !s.rows.every(row => Array.isArray(row) && row.length === (s.columns as unknown[]).length && row.every(decodeCell))) {
       throw new Error("Invalid statement result");
+    }
+    if (s.fullResult !== undefined) {
+      const info = decodeResultInfo(s.fullResult);
+      if (info.rowCount === null || info.columns.length !== s.columns.length ||
+        !info.columns.every((column, i) => column === (s.columns as string[])[i])) {
+        throw new Error("Result session metadata does not match the statement");
+      }
+    }
+    if (s.fullResultError !== undefined && (!text(s.fullResultError) || s.fullResultError.length > 4096)) {
+      throw new Error("Invalid full result error");
     }
   }
   if (JSON.stringify(v).length > 2 * 1024 * 1024) throw new Error("Query result exceeds preview budget");

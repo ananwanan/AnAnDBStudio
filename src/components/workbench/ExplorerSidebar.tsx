@@ -18,10 +18,20 @@ const GROUPS: ReadonlyArray<{ kind: SqliteSchemaObjectKind; title: string }> = [
   { kind: "trigger", title: "Triggers" },
 ];
 
-function SchemaObjectNode({ object }: { object: SqliteSchemaObject }) {
+function SchemaObjectNode({ object, onBrowse }: { object: SqliteSchemaObject; onBrowse: () => void }) {
+  const [menu, setMenu] = useState(false);
+  const browsable = object.kind === "table" && !object.name.toLowerCase().startsWith("sqlite_");
   return (
+    <div>
     <details className="group/object pl-4">
-      <summary className="flex cursor-pointer items-center gap-1 rounded px-1 py-1 text-sm hover:bg-muted">
+      <summary className="flex cursor-pointer items-center gap-1 rounded px-1 py-1 text-sm hover:bg-muted"
+        onDoubleClick={browsable ? onBrowse : undefined}
+        onContextMenu={browsable ? event => { event.preventDefault(); setMenu(true); } : undefined}
+        onKeyDown={browsable ? event => {
+          if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+            event.preventDefault(); setMenu(true);
+          }
+        } : undefined}>
         <ChevronRight className="size-3.5 shrink-0 transition-transform group-open/object:rotate-90" />
         <Table2 className="size-3.5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 truncate" title={object.name}>{object.name}</span>
@@ -41,15 +51,24 @@ function SchemaObjectNode({ object }: { object: SqliteSchemaObject }) {
         ))}
       </div>
     </details>
+    {menu && <div role="menu" className="ml-6 w-fit rounded border bg-popover p-1 shadow-sm">
+      <button role="menuitem" type="button" autoFocus className="rounded px-2 py-1 text-xs hover:bg-muted"
+        onBlur={() => setMenu(false)}
+        onKeyDown={event => { if (event.key === "Escape") setMenu(false); }}
+        onClick={() => { setMenu(false); onBrowse(); }}>查看数据</button>
+    </div>}
+    </div>
   );
 }
 
 interface ExplorerSidebarProps {
   onNewConnection: () => void;
+  onOpenTable?: (connectionId: string, schema: "main", table: string) => void;
 }
 
-export function ExplorerSidebar({ onNewConnection }: ExplorerSidebarProps) {
+export function ExplorerSidebar({ onNewConnection, onOpenTable }: ExplorerSidebarProps) {
   const workspace = useSqliteWorkspace();
+  const [browseError, setBrowseError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const selected = workspace.connections.find((connection) => connection.id === workspace.selectedId);
   const schema = selected ? workspace.schemas[selected.id] : undefined;
@@ -124,6 +143,7 @@ export function ExplorerSidebar({ onNewConnection }: ExplorerSidebarProps) {
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
             />
+            {browseError && <p role="alert" className="py-1 text-xs text-destructive">{browseError}</p>}
             {schema?.status === "loading" && (
               <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
                 <LoaderCircle className="size-3.5 animate-spin" /> 正在读取 Schema…
@@ -147,7 +167,11 @@ export function ExplorerSidebar({ onNewConnection }: ExplorerSidebarProps) {
                     <ChevronRight className="size-3.5 transition-transform group-open/category:rotate-90" />
                     {group.title} ({matching.length})
                   </summary>
-                  {matching.map((object) => <SchemaObjectNode key={`${object.kind}:${object.name}`} object={object} />)}
+                  {matching.map((object) => <SchemaObjectNode key={`${object.kind}:${object.name}`} object={object} onBrowse={() => {
+                    setBrowseError(null);
+                    try { onOpenTable?.(selected.id, schema.snapshot.schema, object.name); }
+                    catch (error) { setBrowseError(error instanceof Error ? error.message : "无法打开数据标签"); }
+                  }} />)}
                   {matching.length === 0 && <p className="pl-5 text-xs text-muted-foreground">无匹配对象</p>}
                 </details>
               );

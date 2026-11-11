@@ -1,6 +1,5 @@
 
 import { Database, FileCode2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
     Card,
     CardContent,
@@ -22,9 +21,6 @@ export function WelcomePanel() {
                         A modern cross-platform database management studio.
                     </p>
 
-                    <Badge variant="secondary">
-                        M2.1 — SQL Editor
-                    </Badge>
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-2">
@@ -41,7 +37,7 @@ export function WelcomePanel() {
 
                         <CardContent>
                             <p className="text-sm text-muted-foreground">
-                                Open an existing SQLite database using the New Connection button, then browse its schema in Explorer.
+                                Open an existing SQLite database using the New Connection button, then double-click a table in Explorer to browse its data.
                             </p>
                         </CardContent>
                     </Card>
@@ -59,7 +55,7 @@ export function WelcomePanel() {
 
                         <CardContent>
                             <p className="text-sm text-muted-foreground">
-                                Use New Query to open independent Monaco SQL tabs. SQL execution will be added in M2.2.
+                                Use New Query to open an independent SQL tab. Enable full results before running a query to browse beyond the preview.
                             </p>
                         </CardContent>
                     </Card>
