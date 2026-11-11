@@ -5,6 +5,11 @@ use serde::Serialize;
 pub enum AppErrorCode {
     InvalidArgument,
     QueryFailed,
+    ConnectionBusy,
+    ResultExpired,
+    ResultCancelled,
+    ResultTimedOut,
+    ExportFailed,
     ProtocolMismatch,
     Internal,
     DatabaseOpenFailed,

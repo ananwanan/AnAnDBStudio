@@ -1,4 +1,5 @@
 //! Bounded SQL execution on a connection-owned worker. No Tauri dependencies.
+use crate::browse::{BrowseError, ResultInfo, SnapshotWriter, Source};
 use fallible_iterator::FallibleIterator;
 use rusqlite::{
     Batch, Connection,
@@ -36,6 +37,10 @@ pub struct StatementResult {
     pub rows: Vec<Vec<Cell>>,
     pub affected_rows: String,
     pub truncated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full_result: Option<ResultInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full_result_error: Option<String>,
 }
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -77,7 +82,7 @@ pub(crate) fn configure(connection: &mut Connection) -> rusqlite::Result<()> {
     }))
 }
 
-fn hex(bytes: &[u8]) -> String {
+pub(crate) fn hex(bytes: &[u8]) -> String {
     use std::fmt::Write;
     let mut output = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
@@ -110,6 +115,28 @@ pub(crate) fn execute(
     sql: &str,
     cancel: Arc<AtomicBool>,
     timeout_ms: u64,
+) -> QueryResult {
+    execute_inner(connection, sql, cancel, timeout_ms, None)
+}
+
+pub(crate) fn execute_capturing(
+    connection: &mut Connection,
+    sql: &str,
+    cancel: Arc<AtomicBool>,
+    timeout_ms: u64,
+    mut publish: impl FnMut(Vec<String>, Source) -> Result<ResultInfo, BrowseError>,
+) -> QueryResult {
+    execute_inner(connection, sql, cancel, timeout_ms, Some(&mut publish))
+}
+
+type PublishResult<'a> = &'a mut dyn FnMut(Vec<String>, Source) -> Result<ResultInfo, BrowseError>;
+
+fn execute_inner(
+    connection: &mut Connection,
+    sql: &str,
+    cancel: Arc<AtomicBool>,
+    timeout_ms: u64,
+    mut publish: Option<PublishResult<'_>>,
 ) -> QueryResult {
     let started = Instant::now();
     let deadline = started + Duration::from_millis(timeout_ms);
@@ -166,8 +193,8 @@ pub(crate) fn execute(
             }
             let next_offset = offset + original.len();
             let columns: Vec<String> = statement.column_names().map(str::to_owned).collect();
-            if columns.len() > 128 {
-                return Err("Result exceeds 128 columns".into());
+            if columns.len() > if publish.is_some() { 2048 } else { 128 } {
+                return Err("Result exceeds the column limit".into());
             }
             used += columns.iter().map(|c| c.len() * 6 + 32).sum::<usize>();
             if used > MAX_BYTES {
@@ -181,33 +208,69 @@ pub(crate) fn execute(
                 rows: vec![],
                 affected_rows: "0".into(),
                 truncated: false,
+                full_result: None,
+                full_result_error: None,
             };
+            let mut capture = None;
+            if read_only && !output.columns.is_empty() && publish.is_some() {
+                match SnapshotWriter::new() {
+                    Ok(writer) => capture = Some(writer),
+                    Err(error) => output.full_result_error = Some(error.message),
+                }
+            }
+            let requested_capture = capture.is_some() || output.full_result_error.is_some();
             {
                 let mut rows = statement.query([]).map_err(|e| e.to_string())?;
                 while let Some(row) = rows.next().map_err(|e| e.to_string())? {
                     if cancel.load(Ordering::Relaxed) || Instant::now() >= deadline {
                         return Err("Execution interrupted".into());
                     }
-                    if output.rows.len() >= MAX_ROWS || used >= MAX_BYTES {
+                    if let Some(writer) = &mut capture
+                        && let Err(error) = writer.push(row, output.columns.len())
+                    {
+                        output.full_result_error = Some(error.message);
+                        capture = None;
+                    }
+                    if (requested_capture && output.truncated)
+                        || output.rows.len() >= MAX_ROWS
+                        || used >= MAX_BYTES
+                    {
                         output.truncated = true;
                         // Writes with RETURNING must be stepped to completion, even
                         // after the preview fills. Never imply that cancellation undoes commits.
-                        if read_only {
+                        if read_only && capture.is_none() {
                             break;
                         }
                         continue;
                     }
                     let mut values = Vec::with_capacity(output.columns.len());
                     for i in 0..output.columns.len() {
-                        let (value, bytes) = cell(row.get_ref(i).map_err(|e| e.to_string())?)?;
+                        let (value, bytes) = match cell(row.get_ref(i).map_err(|e| e.to_string())?)
+                        {
+                            Ok(value) => value,
+                            Err(_) if requested_capture => {
+                                output.truncated = true;
+                                break;
+                            }
+                            Err(error) => return Err(error),
+                        };
                         used += bytes;
                         values.push(value);
                     }
-                    if used <= MAX_BYTES {
+                    if (!requested_capture || !output.truncated) && used <= MAX_BYTES {
                         output.rows.push(values);
                     } else {
                         output.truncated = true;
                     }
+                }
+            }
+            if let (Some(writer), Some(publish)) = (capture, publish.as_mut()) {
+                match writer
+                    .finish()
+                    .and_then(|source| publish(output.columns.clone(), source))
+                {
+                    Ok(info) => output.full_result = Some(info),
+                    Err(error) => output.full_result_error = Some(error.message),
                 }
             }
             if !read_only && connection.total_changes() > before {

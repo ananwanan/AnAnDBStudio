@@ -25,6 +25,7 @@ export function SqlEditorPanel({ api, containerApi }: IDockviewPanelProps) {
   const executionState = useSqlExecution();
   const execution = executionState.executions[api.id];
   const [selection, setSelection] = useState({ sql: "", offset: 0 });
+  const [capture, setCapture] = useState(false);
   const [timeoutMs, setTimeoutMs] = useState(30000);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
 
@@ -38,7 +39,7 @@ export function SqlEditorPanel({ api, containerApi }: IDockviewPanelProps) {
   const run = (sql = selection.sql || draft.sql, offset = selection.sql ? selection.offset : 0) => {
     if (!connection || busy || !sql.trim()) return;
     if (!connection.readOnly && !window.confirm("将在读写连接执行 SQL，可能修改或删除数据。未显式 BEGIN 的写入会自动提交，取消不能撤销已提交的修改。继续执行？")) return;
-    void executeSql(draft.id, connection.id, sql, timeoutMs, draft.sql, offset);
+    void executeSql(draft.id, connection.id, sql, timeoutMs, draft.sql, offset, capture);
     if (containerApi) openWorkbenchPanel(containerApi, "results");
   };
   const marker = execution?.result?.error && execution.sourceSql === draft.sql
@@ -97,6 +98,10 @@ export function SqlEditorPanel({ api, containerApi }: IDockviewPanelProps) {
         <select aria-label="查询超时" className="rounded border bg-background px-1 py-1 text-xs" value={timeoutMs} onChange={e => setTimeoutMs(Number(e.target.value))}>
           <option value={5000}>5 秒</option><option value={30000}>30 秒</option><option value={300000}>5 分钟</option>
         </select>
+        <label className="flex items-center gap-1 text-xs" title="执行时保留可分页的只读结果，受临时存储和查询超时限制">
+          <input type="checkbox" checked={capture} onChange={event => setCapture(event.target.checked)} />
+          保留完整结果
+        </label>
         {execution && <Button variant="ghost" size="sm" onClick={() => { selectExecution(draft.id); if (containerApi) openWorkbenchPanel(containerApi, "results"); }}>查看结果</Button>}
         <Button
           variant="ghost"

@@ -26,6 +26,12 @@ importers:
       '@tauri-apps/plugin-dialog':
         specifier: ^2
         version: 2.8.4
+      ag-grid-community:
+        specifier: 36.3.0
+        version: 36.3.0
+      ag-grid-react:
+        specifier: 36.3.0
+        version: 36.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -700,6 +706,21 @@ packages:
   '@vitest/spy@5.1.0':
     resolution: {integrity: sha512-2DPO5OMHWKrBngC+fCmTQqemNF0gidRhp3lxbBmRhW+M1XJrfgPpqNqWVevXtn2f2ufD5ZaR1B6B641aAlcX5A==}
 
+  ag-charts-types@14.3.0:
+    resolution: {integrity: sha512-6VtzUYBKN5mFY24/Eye3RUn1AAq7s+/B4hEu83ZOK/Pjqx26tHq2MoxiXlBE8F7oQO0VpjV5rZZaw6wxSpMNJg==}
+
+  ag-grid-community@36.3.0:
+    resolution: {integrity: sha512-0JRaIwE82TuOcx+upA3OnTyhDAIUDqrMxLoBib6yVON0SyfICdpOnwD4QdiT0A1lgrC8SkzLBFRst73bTREF6Q==}
+
+  ag-grid-react@36.3.0:
+    resolution: {integrity: sha512-Ttpb5J7b3oun8AdzTrLnXd5iMyh/G3R1esdG3nXnrfPC4kzFsM3sD0/h/wATE3dw7MH1oEKERa7xvQ+8QLuk1A==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  ag-stack@36.3.0:
+    resolution: {integrity: sha512-KbX/b6cM0GIJ4cz6W3jk8YoDG/XpqOC4WurYl8CDuQtER2d4rihjPI4tOLN4LqS0yfVspZ31ED1273kfG+6m0w==}
+
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
 
@@ -1279,6 +1300,10 @@ packages:
     resolution: {integrity: sha512-i24m8rpwhmPIS4zscNzK6MSEhk0DUWa/8iYQWxhffV8jkI4Phvs3F+quL5xvS0gdQR0FyTCMMH33Y78dDTzzIw==}
     engines: {node: '>=18'}
 
+  loose-envify@1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
+
   lru-cache@11.5.3:
     resolution: {integrity: sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==}
     engines: {node: 20 || >=22}
@@ -1332,6 +1357,9 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
+  monaco-editor@0.57.0:
+    resolution: {integrity: sha512-5BkI9KGoqrNvBGUe15/QlZq3OooZ8WLg1AxTpaqHRCP3HNpzPPZKE2EDz8M7c+VRmCeUw1Brp4cx/PWm3kI/5A==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -1351,6 +1379,10 @@ packages:
   npm-run-path@6.0.0:
     resolution: {integrity: sha512-9qny7Z9DsQU8Ou39ERsPU4OZQlSTP47ShQzuKZ6PRXpYLtIFgl/DEBYEXKlvcEa+9tHVcK8CF81Y2V72qaZhWA==}
     engines: {node: '>=18'}
+
+  object-assign@4.1.1:
+    resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
+    engines: {node: '>=0.10.0'}
 
   object-treeify@1.1.33:
     resolution: {integrity: sha512-EFVjAYfzWqWsBMRHPMAXLCDIJnpMhdWAqR7xG6M6a2cs6PMFpl/+Z20w9zDW4vkxOFfddegBKq9Rehd0bxWE7A==}
@@ -1456,6 +1488,9 @@ packages:
     resolution: {integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==}
     engines: {node: '>= 6'}
 
+  prop-types@15.8.1:
+    resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
+
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
@@ -1467,6 +1502,9 @@ packages:
     resolution: {integrity: sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==}
     peerDependencies:
       react: ^19.3.1
+
+  react-is@16.13.1:
+    resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
@@ -1841,9 +1879,6 @@ packages:
 
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
-
-  monaco-editor@0.57.0:
-    resolution: {integrity: sha512-5BkI9KGoqrNvBGUe15/QlZq3OooZ8WLg1AxTpaqHRCP3HNpzPPZKE2EDz8M7c+VRmCeUw1Brp4cx/PWm3kI/5A==}
 
 snapshots:
 
@@ -2418,6 +2453,22 @@ snapshots:
 
   '@vitest/spy@5.1.0': {}
 
+  ag-charts-types@14.3.0: {}
+
+  ag-grid-community@36.3.0:
+    dependencies:
+      ag-charts-types: 14.3.0
+      ag-stack: 36.3.0
+
+  ag-grid-react@36.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+    dependencies:
+      ag-grid-community: 36.3.0
+      prop-types: 15.8.1
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+
+  ag-stack@36.3.0: {}
+
   ajv-formats@2.1.1:
     dependencies:
       ajv: 8.20.0
@@ -2888,6 +2939,10 @@ snapshots:
       chalk: 5.6.2
       is-unicode-supported: 1.3.0
 
+  loose-envify@1.4.0:
+    dependencies:
+      js-tokens: 4.0.0
+
   lru-cache@11.5.3: {}
 
   lru-cache@5.1.1:
@@ -2927,6 +2982,8 @@ snapshots:
 
   minimist@1.2.8: {}
 
+  monaco-editor@0.57.0: {}
+
   ms@2.1.3: {}
 
   nanoid@3.3.20: {}
@@ -2941,6 +2998,8 @@ snapshots:
     dependencies:
       path-key: 4.0.0
       unicorn-magic: 0.3.0
+
+  object-assign@4.1.1: {}
 
   object-treeify@1.1.33: {}
 
@@ -3047,6 +3106,12 @@ snapshots:
       kleur: 3.0.3
       sisteransi: 1.0.5
 
+  prop-types@15.8.1:
+    dependencies:
+      loose-envify: 1.4.0
+      object-assign: 4.1.1
+      react-is: 16.13.1
+
   punycode@2.3.1: {}
 
   queue-microtask@1.2.3: {}
@@ -3055,6 +3120,8 @@ snapshots:
     dependencies:
       react: 19.3.1
       scheduler: 0.28.0
+
+  react-is@16.13.1: {}
 
   react-is@17.0.2: {}
 
@@ -3363,5 +3430,3 @@ snapshots:
   yoctocolors@2.2.0: {}
 
   zod@4.6.7: {}
-
-  monaco-editor@0.57.0: {}

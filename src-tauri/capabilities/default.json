@@ -15,6 +15,10 @@
     "dialog:allow-open",
     "allow-start-sqlite-query",
     "allow-poll-sqlite-query",
-    "allow-cancel-sqlite-query"
+    "allow-cancel-sqlite-query",
+    "allow-open-sqlite-table-result",
+    "allow-get-sqlite-result-page",
+    "allow-close-sqlite-result",
+    "allow-export-sqlite-selection"
   ]
 }

@@ -36,7 +36,7 @@ export async function cancelExecution(id: string) {
     catch (error) { update(id, { error: error instanceof Error ? error.message : "取消请求失败" }); }
   }
 }
-export async function executeSql(draftId: string, connectionId: string, sql: string, timeoutMs: number, sourceSql = sql, selectionOffset = 0) {
+export async function executeSql(draftId: string, connectionId: string, sql: string, timeoutMs: number, sourceSql = sql, selectionOffset = 0, capture = false) {
   if (snapshot.executions[draftId]?.running) return;
   if (Object.values(snapshot.executions).some(e => e.running && e.connectionId === connectionId)) return;
   // Keep at most eight completed previews, plus live jobs (at most 32 connections).
@@ -46,7 +46,7 @@ export async function executeSql(draftId: string, connectionId: string, sql: str
   executions[draftId] = { draftId, connectionId, sql, sourceSql, selectionOffset, jobId: null, running: true, cancelRequested: false, result: null, error: null };
   notify({ ...snapshot, executions, selectedId: draftId });
   try {
-    const jobId = await invokeIpc("start_sqlite_query", { id: connectionId, sql, timeoutMs });
+    const jobId = await invokeIpc("start_sqlite_query", { id: connectionId, sql, timeoutMs, ...(capture ? { capture } : {}) });
     update(draftId, { jobId });
     if (snapshot.executions[draftId]?.cancelRequested) await cancelExecution(draftId);
     while (true) {

@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, OpenFlags};
 
+pub mod browse;
 pub mod query;
 pub mod schema;
 pub mod worker;

@@ -10,6 +10,10 @@ fn main() {
             "start_sqlite_query",
             "poll_sqlite_query",
             "cancel_sqlite_query",
+            "open_sqlite_table_result",
+            "get_sqlite_result_page",
+            "close_sqlite_result",
+            "export_sqlite_selection",
         ]),
     ))
     .expect("failed to generate Tauri application permissions");

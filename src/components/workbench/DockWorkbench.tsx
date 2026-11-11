@@ -4,12 +4,15 @@ import {
   themeDark,
   themeLight,
   type DockviewReadyEvent,
+  type IDockviewPanelProps,
 } from "dockview-react";
 import {
   restoreLayout,
   subscribeLayoutPersistence,
   type DockApi,
 } from "@/lib/dock-layout";
+import { openDataTab, removeRestoredDataTabs } from "@/lib/data-tabs";
+import { DataResultPanel } from "@/components/data-browser/DataResultPanel";
 import { reconcileSqlTabs } from "@/lib/sql-tabs";
 import { useTheme } from "@/components/theme-provider";
 import { ExplorerSidebar } from "./ExplorerSidebar";
@@ -40,10 +43,12 @@ function useDockTheme() {
 export function DockWorkbench({ onApiReady, onNewConnection }: DockWorkbenchProps) {
   const theme = useDockTheme();
   const components = useMemo(() => ({
-    explorer: () => <ExplorerSidebar onNewConnection={onNewConnection} />,
+    explorer: ({ containerApi }: IDockviewPanelProps) => <ExplorerSidebar onNewConnection={onNewConnection}
+      onOpenTable={(connectionId, schema, table) => openDataTab(containerApi, { kind: "table", connectionId, schema, table }, table)} />,
     welcome: () => <WelcomePanel />,
     results: ResultsPanel,
     "sql-editor": SqlEditorPanel,
+    "data-result": DataResultPanel,
   }), [onNewConnection]);
   const [api, setApi] = useState<DockApi | null>(null);
 
@@ -51,6 +56,7 @@ export function DockWorkbench({ onApiReady, onNewConnection }: DockWorkbenchProp
     const instance = event.api;
     restoreLayout(instance);
     reconcileSqlTabs(instance);
+    removeRestoredDataTabs(instance);
     setApi(instance);
     onApiReady(instance);
   }
@@ -66,6 +72,7 @@ export function DockWorkbench({ onApiReady, onNewConnection }: DockWorkbenchProp
         <DockviewReact
           className="anandb-dockview"
           theme={theme}
+          dndStrategy="pointer"
           components={components}
           onReady={handleReady}
         />
