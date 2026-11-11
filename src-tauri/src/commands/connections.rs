@@ -54,3 +54,29 @@ pub async fn get_sqlite_schema(
 fn worker_error() -> AppError {
     AppError::new(AppErrorCode::Internal, "SQLite connection worker failed")
 }
+
+#[tauri::command]
+pub async fn start_sqlite_query(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    sql: String,
+    timeout_ms: u64,
+) -> Result<String, AppError> {
+    manager.start_query(id, sql, timeout_ms)
+}
+#[tauri::command]
+pub async fn poll_sqlite_query(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    job_id: String,
+) -> Result<anandb_driver_sqlite::worker::JobSnapshot, AppError> {
+    manager.poll_query(id, job_id)
+}
+#[tauri::command]
+pub async fn cancel_sqlite_query(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    job_id: String,
+) -> Result<(), AppError> {
+    manager.cancel_query(id, job_id)
+}

@@ -4,6 +4,7 @@ use serde::Serialize;
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AppErrorCode {
     InvalidArgument,
+    QueryFailed,
     ProtocolMismatch,
     Internal,
     DatabaseOpenFailed,

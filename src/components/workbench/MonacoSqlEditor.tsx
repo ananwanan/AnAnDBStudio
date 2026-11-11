@@ -15,14 +15,21 @@ interface MonacoSqlEditorProps {
   id: string;
   value: string;
   onChange: (value: string) => void;
+  onRun?: (sql: string, offset: number) => void;
+  onSelection?: (sql: string, offset: number) => void;
+  error?: { offset: number; message: string } | null;
 }
 
-export function MonacoSqlEditor({ id, value, onChange }: MonacoSqlEditorProps) {
+export function MonacoSqlEditor({ id, value, onChange, onRun, onSelection, error }: MonacoSqlEditorProps) {
   const container = useRef<HTMLDivElement>(null);
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const model = useRef<monaco.editor.ITextModel | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const runRef = useRef(onRun);
+  runRef.current = onRun;
+  const selectionRef = useRef(onSelection);
+  selectionRef.current = onSelection;
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -47,7 +54,23 @@ export function MonacoSqlEditor({ id, value, onChange }: MonacoSqlEditorProps) {
     const subscription = instance.onDidChangeModelContent(() => {
       onChangeRef.current(textModel.getValue());
     });
+    const selectionSubscription = instance.onDidChangeCursorSelection(() => {
+      const range = instance.getSelection();
+      selectionRef.current?.(range && !range.isEmpty() ? textModel.getValueInRange(range) : "",
+        range && !range.isEmpty() ? textModel.getOffsetAt(range.getStartPosition()) : 0);
+    });
+    const runAction = instance.addAction({
+      id: "anandb.execute", label: "Execute selected SQL or script",
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+      run: () => {
+        const range = instance.getSelection();
+        runRef.current?.(range && !range.isEmpty() ? textModel.getValueInRange(range) : textModel.getValue(),
+          range && !range.isEmpty() ? textModel.getOffsetAt(range.getStartPosition()) : 0);
+      },
+    });
     return () => {
+      selectionSubscription.dispose();
+      runAction.dispose();
       subscription.dispose();
       instance.dispose();
       textModel.dispose();
@@ -75,6 +98,18 @@ export function MonacoSqlEditor({ id, value, onChange }: MonacoSqlEditorProps) {
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
   }, [theme]);
+
+  useEffect(() => {
+    const textModel = model.current;
+    if (!textModel) return;
+    const position = error ? textModel.getPositionAt(error.offset) : null;
+    monaco.editor.setModelMarkers(textModel, "sql-execution", position && error ? [{
+      severity: monaco.MarkerSeverity.Error, message: error.message,
+      startLineNumber: position.lineNumber, endLineNumber: position.lineNumber,
+      startColumn: position.column, endColumn: position.column + 1,
+    }] : []);
+    if (position) editor.current?.revealPositionInCenter(position);
+  }, [error, id]);
 
   return <div ref={container} aria-label="SQL 代码编辑器" className="h-full min-h-0 w-full" />;
 }

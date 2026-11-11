@@ -1,3 +1,4 @@
+import { decodeQueryId, decodeQueryJob } from "./query-protocol";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -23,7 +24,8 @@ export type BackendErrorCode =
     | "CONNECTION_NOT_FOUND"
     | "CONNECTION_LIMIT_REACHED"
     | "SCHEMA_READ_FAILED"
-    | "SCHEMA_TOO_LARGE";
+    | "SCHEMA_TOO_LARGE"
+    | "QUERY_FAILED";
 
 export type IpcErrorCode =
     | BackendErrorCode
@@ -40,6 +42,7 @@ const BACKEND_ERROR_CODES: ReadonlySet<string> = new Set([
     "CONNECTION_LIMIT_REACHED",
     "SCHEMA_READ_FAILED",
     "SCHEMA_TOO_LARGE",
+    "QUERY_FAILED",
 ]);
 
 export class IpcError extends Error {
@@ -278,6 +281,9 @@ const RESPONSE_DECODERS: {
         value: unknown,
     ) => IpcCommandResult<C>;
 } = {
+    start_sqlite_query: (value) => decodeQueryResponse(() => decodeQueryId(value)),
+    poll_sqlite_query: (value) => decodeQueryResponse(() => decodeQueryJob(value)),
+    cancel_sqlite_query: decodeVoid,
     get_app_info: decodeAppInfo,
     check_ipc_protocol: decodeVoid,
     open_sqlite_connection: decodeSqliteConnectionInfo,
@@ -304,5 +310,11 @@ export async function invokeIpc<C extends IpcCommandName>(
         return RESPONSE_DECODERS[command](response);
     } catch (error: unknown) {
         throw normalizeIpcError(error);
+    }
+}
+
+function decodeQueryResponse<T>(decode: () => T): T {
+    try { return decode(); } catch {
+        throw new IpcError("INVALID_RESPONSE", "Invalid SQL execution response");
     }
 }

@@ -36,6 +36,7 @@ dependencies = [
 name = "anandb-driver-sqlite"
 version = "0.1.0"
 dependencies = [
+ "fallible-iterator",
  "rusqlite",
  "serde",
 ]

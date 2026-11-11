@@ -1,9 +1,9 @@
 //! Per-process registry for already opened SQLite database handles.
-//! SQL execution and metadata traversal are intentionally out of scope for M1.2.
+//! Registry locks are never held while waiting for a database worker.
 
 use std::collections::BTreeMap;
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 use anandb_driver_sqlite::{OpenMode, SchemaSnapshot, SqliteDatabase, SqliteError};
 use serde::Serialize;
@@ -22,7 +22,7 @@ pub struct ConnectionInfo {
 }
 
 struct ManagedConnection {
-    database: SqliteDatabase,
+    worker: Arc<anandb_driver_sqlite::worker::ConnectionWorker>,
     info: ConnectionInfo,
 }
 
@@ -78,7 +78,10 @@ impl ConnectionManager {
         entries.insert(
             id,
             ManagedConnection {
-                database,
+                worker: Arc::new(
+                    anandb_driver_sqlite::worker::ConnectionWorker::new(database)
+                        .map_err(|_| internal_error())?,
+                ),
                 info: info.clone(),
             },
         );
@@ -90,28 +93,56 @@ impl ConnectionManager {
         Ok(entries.values().map(|entry| entry.info.clone()).collect())
     }
 
-    /// Reads main-schema metadata for one live connection, never executes user SQL.
-    /// The registry mutex is held during this bounded read; M2 will move to
-    /// per-connection workers when long-running query jobs are introduced.
+    fn worker(
+        &self,
+        id: &str,
+    ) -> Result<Arc<anandb_driver_sqlite::worker::ConnectionWorker>, AppError> {
+        let number = parse_connection_id(id)?;
+        self.connections
+            .lock()
+            .map_err(|_| internal_error())?
+            .get(&number)
+            .map(|entry| Arc::clone(&entry.worker))
+            .ok_or_else(|| {
+                AppError::new(
+                    AppErrorCode::ConnectionNotFound,
+                    "SQLite connection not found",
+                )
+            })
+    }
+
     pub fn schema(&self, id: String) -> Result<SchemaSnapshot, AppError> {
-        let number = parse_connection_id(&id)?;
-        let mut entries = self.connections.lock().map_err(|_| internal_error())?;
-        let entry = entries.get_mut(&number).ok_or_else(|| {
-            AppError::new(
-                AppErrorCode::ConnectionNotFound,
-                "SQLite connection not found",
-            )
-        })?;
-        entry.database.read_schema().map_err(|error| match error {
+        self.worker(&id)?.schema().map_err(|error| match error {
             SqliteError::SchemaLimitExceeded(_) => AppError::new(
                 AppErrorCode::SchemaTooLarge,
                 "SQLite schema is too large for a single metadata response",
             ),
             _ => AppError::new(
                 AppErrorCode::SchemaReadFailed,
-                "Failed to read SQLite schema metadata",
+                "Failed to read SQLite schema metadata; the connection may be busy",
             ),
         })
+    }
+
+    pub fn start_query(
+        &self,
+        id: String,
+        sql: String,
+        timeout_ms: u64,
+    ) -> Result<String, AppError> {
+        self.worker(&id)?
+            .start(sql, timeout_ms)
+            .map_err(query_error)
+    }
+    pub fn poll_query(
+        &self,
+        id: String,
+        job_id: String,
+    ) -> Result<anandb_driver_sqlite::worker::JobSnapshot, AppError> {
+        self.worker(&id)?.poll(&job_id).map_err(query_error)
+    }
+    pub fn cancel_query(&self, id: String, job_id: String) -> Result<(), AppError> {
+        self.worker(&id)?.cancel(&job_id).map_err(query_error)
     }
 
     /// Removes the connection from the registry before closing its handle.
@@ -128,7 +159,7 @@ impl ConnectionManager {
                 )
             })?
         };
-        entry.database.close().map_err(|_| {
+        entry.worker.close().map_err(|_| {
             AppError::new(
                 AppErrorCode::DatabaseCloseFailed,
                 "Failed to close SQLite database",
@@ -142,6 +173,10 @@ fn parse_connection_id(id: &str) -> Result<u64, AppError> {
         .filter(|part| !part.is_empty() && !part.starts_with('0'))
         .and_then(|part| part.parse::<u64>().ok())
         .ok_or_else(|| AppError::new(AppErrorCode::InvalidArgument, "Invalid connection id"))
+}
+
+fn query_error(message: String) -> AppError {
+    AppError::new(AppErrorCode::QueryFailed, message)
 }
 
 fn internal_error() -> AppError {
@@ -288,5 +323,32 @@ mod tests {
             registry.close(handle.id).unwrap();
         }
         assert!(registry.list().unwrap().is_empty());
+    }
+    #[test]
+    fn query_jobs_do_not_hold_registry_and_close_cleans_up() {
+        let fixture = Fixture::new();
+        let registry = ConnectionManager::default();
+        let first = registry.open_existing(fixture.path(), false).unwrap();
+        let second = registry.open_existing(fixture.path(), true).unwrap();
+        let job = registry.start_query(first.id.clone(), "WITH RECURSIVE a(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM a) SELECT sum(x) FROM a".into(), 300000).unwrap();
+        assert_eq!(registry.list().unwrap().len(), 2);
+        assert!(registry.schema(second.id.clone()).is_ok());
+        assert!(
+            registry
+                .poll_query(first.id.clone(), job.clone())
+                .unwrap()
+                .result
+                .is_none()
+        );
+        registry.cancel_query(first.id.clone(), job).unwrap();
+        registry.close(first.id.clone()).unwrap();
+        assert_eq!(
+            registry
+                .start_query(first.id, "SELECT 1".into(), 1000)
+                .unwrap_err()
+                .code,
+            AppErrorCode::ConnectionNotFound
+        );
+        registry.close(second.id).unwrap();
     }
 }
