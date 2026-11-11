@@ -164,6 +164,14 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 - Keep dependency usage and license obligations documented; project license is undecided until a LICENSE file exists.
 - Never add CI badge/status, coverage numbers or version claims that are not backed by real builds/releases.
 
-## 9. Immediate next action
+## 9. M3 result sessions
 
-**M2 milestone acceptance:** M2.1 is integrated into `dev` via PR #8. The authorized M2.2–M2.4 implementation is on `feat/m2-sql-execution`: connection-owned workers, bounded SQL previews, cancellation, timeout, history and editor/result integration. Review `docs/acceptance/M2.md` and collect the remaining Windows/Linux GUI and M1 final acceptance evidence before milestone sign-off. M3 full data browsing/virtualization and M4 editing remain separate milestones.
+- Use the existing connection worker for table browsing. Keep table page reads short and release any transaction opened for that page. SQL editor transactions retain their original lifecycle.
+- Full SQL results are opt-in and captured during the original execution. Never replay a script to fetch pages. Keep session data out of persisted Dockview layouts. See [M3 architecture](docs/architecture/M3-data-browser.md).
+- Keep the selection export command scoped to a native save dialog, with a bounded UTF-8 payload and an atomic create operation.
+
+## 10. Milestone acceptance
+
+**M3 is implemented on `feat/m3-data-browser`.** See [M3 acceptance](docs/acceptance/M3.md) for verified and pending checks. M4 editing is a separate milestone.
+
+**Historical M2 milestone acceptance:** M2 was integrated into `dev` via PRs #8 and #9. See [M2 acceptance](docs/acceptance/M2.md) for reported and automated evidence.
