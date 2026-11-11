@@ -4,12 +4,12 @@
 >
 > 现代化、跨平台的专业数据库管理工具。
 
-[![Status](https://img.shields.io/badge/status-M2%20validated%20by%20maintainer-yellow)](#development-roadmap--开发路线)
+[![Status](https://img.shields.io/badge/status-M2%20merged%20into%20dev-yellow)](#development-roadmap--开发路线)
 [![Desktop](https://img.shields.io/badge/desktop-Windows%20%7C%20Linux%20%7C%20macOS-informational)](#technical-stack)
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-11）：M2 SQL IDE 开发完成，维护者报告验收通过，待合入 `dev`。** M0/M1/M2.1 已合入 `dev`；M2.2–M2.4 在 `feat/m2-sql-execution` 实现连接级工作线程、多语句执行、逐语句结果预览、错误定位、取消/超时、会话查询历史和快捷键。M2 的人工验证由维护者确认通过，逐平台的原始验证日志未随报告提供；自动化验证见 [M2 验收记录](docs/acceptance/M2.md)，本次 PR 的 Windows/Linux CI 以 GitHub Actions 结果为准。下阶段为 **M3 — Data Browser**，尚未发布 `v0.1.0`。
+> **项目状态（2026-11-11）：M2 SQL IDE 已通过维护者验收并合入 `dev`（[PR #9](https://github.com/ananwanan/AnAnDBStudio/pull/9)）。** M0/M1/M2.1–M2.4 均已集成。M2 包含连接级工作线程、多语句执行、逐语句结果预览、错误定位、取消/超时、会话查询历史和快捷键。维护者确认人工验证通过；逐平台的原始桌面验证日志未随报告提供。自动化证据见 [M2 验收记录](docs/acceptance/M2.md)；合并时 Windows/Linux PR CI 尚在运行，结果以 [GitHub Actions](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42947979935) 为准。下一阶段为 **M3 — Data Browser**，尚未发布 `v0.1.0`。
 
 ## Product goals / 产品目标
 
@@ -162,7 +162,7 @@ M3 remains **read-only**; editable cells, change sets, commit and rollback belon
 | **M1.4** | Native connection dialog, workspace state, interactive schema explorer | [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) merged into `dev`; maintainer-reported local tests and GUI verification pass |
 | **M1.5** | Connection lifecycle and error hardening | Integrated via PR #6; backend CI passed |
 
-**Current progress (2026-11-11):** M0/M1/M2.1 are integrated in `dev`; M2.2–M2.4 have been implemented on `feat/m2-sql-execution` and the maintainer reports successful desktop validation. M2 PR CI and integration still need recording. See [M1 acceptance](docs/acceptance/M1.md), [M2.1 acceptance](docs/acceptance/M2.1.md), and [M2 acceptance](docs/acceptance/M2.md). Proceed to M3 only from the integrated `dev` head.
+**Current progress (2026-11-11):** M0/M1 and all M2 SQL IDE deliverables are integrated into `dev` via [PR #9](https://github.com/ananwanan/AnAnDBStudio/pull/9) (merge commit `b667963`). Maintainer-reported M2 desktop validation passed; Windows/Ubuntu PR CI was in progress at merge time and must be assessed independently. See [M1 acceptance](docs/acceptance/M1.md), [M2.1 acceptance](docs/acceptance/M2.1.md), and [M2 acceptance](docs/acceptance/M2.md). M3 Data Browser is the next development milestone.
 
 ## Engineering invariants / 工程底线
 
@@ -191,7 +191,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Desktop application:** After the M2 PR is integrated, use `dev` for the complete SQL IDE. Open an existing database, bind a SQL tab, and use Ctrl/Cmd+Enter to execute a selection or the entire script. Read-write connections require confirmation. Use the checked-in lockfiles:
+**Desktop application:** Use `dev` for the integrated M2 SQL IDE. Open an existing database, bind a SQL tab, and use Ctrl/Cmd+Enter to execute a selection or the entire script. Read-write connections require confirmation. Use the checked-in lockfiles:
 
 ```powershell
 pnpm install
