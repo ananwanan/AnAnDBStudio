@@ -4,12 +4,12 @@
 >
 > 现代化、跨平台的专业数据库管理工具。
 
-[![Status](https://img.shields.io/badge/status-M1.4%20local%20checks%20passed-yellow)](#development-roadmap--开发路线)
+[![Status](https://img.shields.io/badge/status-M2%20validated%20by%20maintainer-yellow)](#development-roadmap--开发路线)
 [![Desktop](https://img.shields.io/badge/desktop-Windows%20%7C%20Linux%20%7C%20macOS-informational)](#technical-stack)
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-11）：M2 SQL IDE 已实现，等待最终验收。** M0/M1 及 M2.1 已合入 `dev`。M2.2–M2.4 在 `feat/m2-sql-execution` 补齐连接级工作线程、多语句执行、逐语句预览、错误定位、取消/超时、会话查询历史和快捷键。自动化验证及待验收项见 [M2 验收记录](docs/acceptance/M2.md)。M1/M2 的 Windows/Linux GUI 最终验收仍需记录，尚未发布 `v0.1.0`。
+> **项目状态（2026-11-11）：M2 SQL IDE 开发完成，维护者报告验收通过，待合入 `dev`。** M0/M1/M2.1 已合入 `dev`；M2.2–M2.4 在 `feat/m2-sql-execution` 实现连接级工作线程、多语句执行、逐语句结果预览、错误定位、取消/超时、会话查询历史和快捷键。M2 的人工验证由维护者确认通过，逐平台的原始验证日志未随报告提供；自动化验证见 [M2 验收记录](docs/acceptance/M2.md)，本次 PR 的 Windows/Linux CI 以 GitHub Actions 结果为准。下阶段为 **M3 — Data Browser**，尚未发布 `v0.1.0`。
 
 ## Product goals / 产品目标
 
@@ -124,10 +124,22 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 
 | Task | Deliverable | Current status |
 | --- | --- | --- |
-| **M2.1** | Monaco SQL editor, independent Dockview query tabs, per-tab connection binding and local draft recovery | Integrated into `dev` via PR #8; [desktop acceptance](docs/acceptance/M2.1.md) pending |
+| **M2.1** | Monaco SQL editor, independent Dockview query tabs, per-tab connection binding and local draft recovery | Integrated into `dev` via PR #8; maintainer reports M2 end-to-end desktop validation passed (see [M2 acceptance](docs/acceptance/M2.md)) |
 | **M2.2** | Asynchronous per-connection SQL execution jobs and typed error/result protocol | Implemented; bounded worker result slots and validated IPC |
 | **M2.3** | Multi-statement execution, UTF-16 error locations, cancellation and timeout | Implemented; stop-on-error, rollback of open transactions |
-| **M2.4** | Result preview, session history, Ctrl/Cmd+Enter, platform acceptance | Implemented; [automated evidence and pending GUI checks](docs/acceptance/M2.md) |
+| **M2.4** | Result preview, session history, Ctrl/Cmd+Enter, platform acceptance | Implemented; maintainer-reported validation passed; [automated evidence and CI distinction](docs/acceptance/M2.md) |
+
+### M3 breakdown / Data Browser 拆分（下一阶段）
+
+| Task | Planned deliverable | Acceptance focus |
+| --- | --- | --- |
+| **M3.1** | AG Grid Community read-only result tabs integrated with Dockview | SELECT results display in separate dockable tabs; correct column ordering and basic type rendering |
+| **M3.2** | Bounded backend page/cursor protocol and result lifetime | Fetch pages on demand without collecting an unbounded result set; explicit cleanup/cancellation |
+| **M3.3** | Virtual scrolling, incremental loading and cache limits | Large tables stay responsive with bounded memory |
+| **M3.4** | Table browsing, filtering and sorting | Stable, correct navigation with backend-aware filter/sort semantics |
+| **M3.5** | SQLite value fidelity, copy/export-selection and cross-platform acceptance | Preserve NULL, BLOB, 64-bit integers and duplicate column labels without lossy conversion |
+
+M3 remains **read-only**; editable cells, change sets, commit and rollback belong to M4. M2's 200-row preview is not a paging API and must not be treated as an unlimited result source.
 
 ### M0 breakdown / 第一阶段拆分
 
@@ -147,10 +159,10 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M1.1** | Tauri-independent SQLite driver; existing files, read-only/read-write open | Integrated via PR #6; backend CI passed |
 | **M1.2** | Connection registry, typed open/list/close IPC | Integrated via PR #6; backend CI passed |
 | **M1.3** | Bounded main-schema discovery, typed schema IPC | Integrated via PR #6; backend CI passed |
-| **M1.4** | Native connection dialog, workspace state, interactive schema explorer | [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) open; maintainer-reported local tests and GUI verification pass |
+| **M1.4** | Native connection dialog, workspace state, interactive schema explorer | [PR #7](https://github.com/ananwanan/AnAnDBStudio/pull/7) merged into `dev`; maintainer-reported local tests and GUI verification pass |
 | **M1.5** | Connection lifecycle and error hardening | Integrated via PR #6; backend CI passed |
 
-**Current progress (2026-11-11):** M0/M1/M2.1 are integrated in `dev`; M2 execution and UI implementation is on `feat/m2-sql-execution`. See [M1 acceptance](docs/acceptance/M1.md), [M2.1 acceptance](docs/acceptance/M2.1.md), and [M2 acceptance](docs/acceptance/M2.md). Implementation completion does not replace pending desktop acceptance.
+**Current progress (2026-11-11):** M0/M1/M2.1 are integrated in `dev`; M2.2–M2.4 have been implemented on `feat/m2-sql-execution` and the maintainer reports successful desktop validation. M2 PR CI and integration still need recording. See [M1 acceptance](docs/acceptance/M1.md), [M2.1 acceptance](docs/acceptance/M2.1.md), and [M2 acceptance](docs/acceptance/M2.md). Proceed to M3 only from the integrated `dev` head.
 
 ## Engineering invariants / 工程底线
 
@@ -179,7 +191,7 @@ Acceptance evidence belongs under `docs/acceptance/` when that directory is crea
 
 ## Getting started / 快速开始
 
-**Desktop application:** To test the complete M2 implementation, check out `feat/m2-sql-execution`. Open an existing database, bind a SQL tab, and use Ctrl/Cmd+Enter to execute the selection or whole script. Read-write connections require confirmation. Use the checked-in lockfiles:
+**Desktop application:** After the M2 PR is integrated, use `dev` for the complete SQL IDE. Open an existing database, bind a SQL tab, and use Ctrl/Cmd+Enter to execute a selection or the entire script. Read-write connections require confirmation. Use the checked-in lockfiles:
 
 ```powershell
 pnpm install
