@@ -1,4 +1,4 @@
-import { isDataTab } from "./data-tabs";
+import { closeDataTab, isDataTab } from "./data-tabs";
 import type { DockApi } from "./dock-layout";
 import { isSqlPanelId } from "./sql-tabs";
 
@@ -48,7 +48,10 @@ export function closeWorkbenchPanel(api: DockApi, id: WorkbenchPanelId): void {
 }
 
 export function closeActiveWorkbenchPanel(api: DockApi): void {
-  if (api.activePanel) api.removePanel(api.activePanel);
+  const panel = api.activePanel;
+  if (!panel) return;
+  if (isDataTab(panel.id)) closeDataTab(api, panel.id);
+  else api.removePanel(panel);
 }
 
 export function readPanelSnapshot(api: DockApi): PanelSnapshot {

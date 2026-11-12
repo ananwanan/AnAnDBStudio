@@ -1,8 +1,10 @@
 /** @vitest-environment jsdom */
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { BrowseRow, ResultInfo, ResultPage } from "@/services/browse-protocol";
 import { DataGrid } from "./DataGrid";
+import { useTableEdits } from "./use-table-edits";
 
 const { readResultPage, exportSelection } = vi.hoisted(() => ({
   readResultPage: vi.fn(), exportSelection: vi.fn(async (_format: string, _data: string) => true),
@@ -90,4 +92,93 @@ it("loads by block as the viewport advances and evicts distant blocks", async ()
   viewport.scrollTop = 0;
   fireEvent.scroll(viewport);
   await waitFor(() => expect(readResultPage.mock.calls.filter(call => call[2] === 0)).toHaveLength(firstReads + 1));
+});
+
+it("stages with F2 or double click, validates types and ignores composition Enter and Escape", async () => {
+  const editable: ResultInfo = {
+    id: "2", columns: ["computed", "name"], maxPageSize: 100, rowCount: 2,
+    editing: { schemaVersion: 1, identityColumns: [], rowIdAlias: "rowid", writable: [false, true], readOnlyReason: null },
+  };
+  readResultPage.mockResolvedValue({ end: true, rowIds: ["1", "2"], rows: [
+    [{ type: "text", value: "generated" }, { type: "text", value: "original" }],
+    [{ type: "text", value: "other" }, { type: "textPreview", value: "partial", bytes: 20000 }],
+  ] });
+  function Harness() {
+    const edits = useTableEdits("editing-grid", "sqlite-1", "table");
+    return <div style={{ height: 320, width: 720 }}>
+      <DataGrid connectionId="sqlite-1" info={editable} pageSize={25} onCancel={() => {}} edits={edits} />
+      <output>{edits.draft?.entries.size ?? 0} staged</output>
+    </div>;
+  }
+  const cell = (element: HTMLElement) => element.closest<HTMLElement>(".ag-cell")!;
+  render(<Harness />);
+  const original = cell(await screen.findByText("original"));
+  fireEvent.doubleClick(cell(screen.getByText("generated")), { detail: 2 });
+  fireEvent.doubleClick(cell(screen.getByText(/partial/)), { detail: 2 });
+  expect(screen.queryByLabelText("name 值")).toBeNull();
+  fireEvent.mouseDown(original);
+  fireEvent.doubleClick(original, { detail: 2 });
+  let input = await screen.findByLabelText("name 值");
+  expect(document.activeElement).toBe(input);
+  fireEvent.change(input, { target: { value: "discarded" } });
+  fireEvent.keyDown(input, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByLabelText("name 值")).toBeNull());
+  expect(screen.getByText("0 staged")).toBeTruthy();
+  expect(document.activeElement).toBe(original);
+  fireEvent.keyDown(original, { key: "F2" });
+  input = await screen.findByLabelText("name 值");
+  fireEvent.change(screen.getByLabelText("name 类型"), { target: { value: "integer" } });
+  fireEvent.change(input, { target: { value: "9223372036854775808" } });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(screen.getByText(/int64 范围/)).toBeTruthy();
+  fireEvent.change(input, { target: { value: "9223372036854775807" } });
+  fireEvent.compositionStart(input);
+  fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+  fireEvent.keyDown(input, { key: "Escape", isComposing: true });
+  expect(screen.getByLabelText("name 值")).toBeTruthy();
+  fireEvent.compositionEnd(input);
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(await screen.findByText("✎ 9223372036854775807")).toBeTruthy();
+  expect(screen.getByText("1 staged")).toBeTruthy();
+  fireEvent.click(original);
+  fireEvent.click(screen.getByRole("button", { name: "删除选中行" }));
+  expect(await screen.findByText("待删除 1")).toBeTruthy();
+  fireEvent.doubleClick(original, { detail: 2 });
+  expect(screen.queryByLabelText("name 值")).toBeNull();
+});
+
+it("restores the edit overlay after jumping pages and recreating the grid cache", async () => {
+  const editable: ResultInfo = {
+    id: "3", columns: ["name"], maxPageSize: 100, rowCount: 1000,
+    editing: { schemaVersion: 1, identityColumns: [], rowIdAlias: "rowid", writable: [true], readOnlyReason: null },
+  };
+  readResultPage.mockImplementation(async (_connection: string, _info: ResultInfo, offset: number, limit: number): Promise<ResultPage> => ({
+    end: false,
+    rowIds: Array.from({ length: limit }, (_, index) => String(offset + index + 1)),
+    rows: Array.from({ length: limit }, (_, index) => [{ type: "text", value: `row-${offset + index}` }]),
+  }));
+  function Harness() {
+    const edits = useTableEdits("paged-editing-grid", "sqlite-1", "table");
+    const [offset, setOffset] = useState(0);
+    return <div style={{ height: 320, width: 720 }}>
+      <button onClick={() => setOffset(current => current ? 0 : 300)}>跳页</button>
+      <DataGrid key={offset} connectionId="sqlite-1" info={editable} pageSize={25} baseOffset={offset}
+        onCancel={() => {}} edits={edits} />
+    </div>;
+  }
+  render(<Harness />);
+  const first = (await screen.findByText("row-0")).closest(".ag-cell")!;
+  fireEvent.mouseDown(first);
+  fireEvent.doubleClick(first, { detail: 2 });
+  const input = await screen.findByLabelText("name 值");
+  fireEvent.change(input, { target: { value: "draft" } });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(await screen.findByText("✎ draft")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "跳页" }));
+  await screen.findByText("row-300");
+  expect(screen.queryByText("✎ draft")).toBeNull();
+  const firstReads = readResultPage.mock.calls.filter(call => call[2] === 0).length;
+  fireEvent.click(screen.getByRole("button", { name: "跳页" }));
+  await waitFor(() => expect(readResultPage.mock.calls.filter(call => call[2] === 0)).toHaveLength(firstReads + 1));
+  expect(await screen.findByText("✎ draft")).toBeTruthy();
 });

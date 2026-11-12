@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { AppHeader } from "@/components/workbench/AppHeader";
 import { NewConnectionDialog } from "@/components/workbench/NewConnectionDialog";
@@ -18,6 +19,8 @@ import {
 } from "@/lib/workbench-panels";
 import { createSqlDraft, useSqlDrafts } from "@/stores/sql-drafts";
 import { initializeSqliteWorkspace, useSqliteWorkspace } from "@/stores/sqlite-workspace";
+import { hasPendingEdits, protectEdits } from "@/lib/edit-lifecycle";
+import { EditLeavePrompt } from "@/components/data-browser/EditModal";
 
 const EMPTY_SNAPSHOT: PanelSnapshot = {
   opened: { explorer: false, welcome: false, results: false },
@@ -36,6 +39,36 @@ export default function App() {
 
   useEffect(() => {
     if (isTauri()) void initializeSqliteWorkspace();
+  }, []);
+
+  useEffect(() => {
+    function beforeUnload(event: BeforeUnloadEvent) {
+      if (!hasPendingEdits()) return;
+      event.preventDefault();
+      event.returnValue = true;
+    }
+    window.addEventListener("beforeunload", beforeUnload);
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    if (isTauri()) {
+      const appWindow = getCurrentWindow();
+      void appWindow.onCloseRequested(async event => {
+        if (!hasPendingEdits()) return;
+        event.preventDefault();
+        if (await protectEdits("退出前处理修改")) {
+          try { await appWindow.destroy(); }
+          catch { setQueryError("关闭窗口失败，请重试。"); }
+        }
+      }).then(stop => {
+        if (disposed) stop();
+        else unlisten = stop;
+      }).catch(() => { if (!disposed) setQueryError("无法启用窗口退出保护。"); });
+    }
+    return () => {
+      disposed = true;
+      unlisten?.();
+      window.removeEventListener("beforeunload", beforeUnload);
+    };
   }, []);
 
   const handleNewQuery = useCallback(() => {
@@ -94,8 +127,9 @@ export default function App() {
     setPanelSnapshot(readPanelSnapshot(dockApi));
   }
 
-  function handleResetLayout() {
+  async function handleResetLayout() {
     if (!dockApi) return;
+    if (!(await protectEdits("重置布局前处理修改"))) return;
     resetLayout(dockApi);
     setPanelSnapshot(readPanelSnapshot(dockApi));
   }
@@ -120,6 +154,7 @@ export default function App() {
         </div>
       )}
       <DockWorkbench onApiReady={setDockApi} onNewConnection={openConnectionDialog} />
+      <EditLeavePrompt />
       <StatusBar />
       {showConnectionDialog && <NewConnectionDialog onClose={closeConnectionDialog} />}
     </div>

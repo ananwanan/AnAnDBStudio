@@ -6,6 +6,7 @@ import {
   openSqliteConnection,
 } from "@/services/sqlite-connections";
 import { getSqliteSchema } from "@/services/sqlite-schema";
+import { protectEdits } from "@/lib/edit-lifecycle";
 
 export type SchemaState =
   | { readonly status: "loading" }
@@ -116,10 +117,27 @@ export async function addSqliteConnection(path: string, readOnly: boolean): Prom
 }
 
 export async function removeSqliteConnection(id: string): Promise<void> {
+  await closeOrReopen(id);
+}
+
+export async function switchSqliteConnectionMode(id: string): Promise<void> {
+  const connection = state.connections.find(entry => entry.id === id);
+  if (connection) await closeOrReopen(id, !connection.readOnly);
+}
+
+async function closeOrReopen(id: string, reopenReadOnly?: boolean): Promise<void> {
   if (state.closingIds.includes(id)) return;
-  if (!state.connections.some((connection) => connection.id === id)) return;
+  const connection = state.connections.find(entry => entry.id === id);
+  if (!connection) return;
+  const title = reopenReadOnly === undefined ? "关闭连接前处理修改" : "切换连接模式前处理修改";
+  if (!(await protectEdits(title, guard => guard.connectionId === id)) || state.closingIds.includes(id)) return;
   patch({ closingIds: [...state.closingIds, id], error: null });
   try {
+    if (reopenReadOnly !== undefined) {
+      const reopened = await openSqliteConnection(connection.path, reopenReadOnly);
+      patch({ connections: [...state.connections, reopened], selectedId: reopened.id });
+      void refreshSqliteSchema(reopened.id);
+    }
     await closeSqliteConnection(id);
     const remaining = state.connections.filter((connection) => connection.id !== id);
     const schemas = { ...state.schemas };

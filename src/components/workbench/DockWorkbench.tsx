@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   DockviewReact,
+  DockviewDefaultTab,
   themeDark,
   themeLight,
   type DockviewReadyEvent,
   type IDockviewPanelProps,
+  type IDockviewPanelHeaderProps,
 } from "dockview-react";
 import {
   restoreLayout,
   subscribeLayoutPersistence,
   type DockApi,
 } from "@/lib/dock-layout";
-import { openDataTab, removeRestoredDataTabs } from "@/lib/data-tabs";
+import { closeDataTab, openDataTab, removeRestoredDataTabs } from "@/lib/data-tabs";
 import { DataResultPanel } from "@/components/data-browser/DataResultPanel";
 import { reconcileSqlTabs } from "@/lib/sql-tabs";
 import { useTheme } from "@/components/theme-provider";
@@ -24,6 +26,12 @@ interface DockWorkbenchProps {
   onNewConnection: () => void;
   onApiReady: (api: DockApi) => void;
 }
+
+function DataTab(props: IDockviewPanelHeaderProps) {
+  return <DockviewDefaultTab {...props} closeActionOverride={() => closeDataTab(props.containerApi, props.api.id)} />;
+}
+
+const tabs = { "data-tab": DataTab };
 
 function useDockTheme() {
   const { theme } = useTheme();
@@ -74,6 +82,7 @@ export function DockWorkbench({ onApiReady, onNewConnection }: DockWorkbenchProp
           theme={theme}
           dndStrategy="pointer"
           components={components}
+          tabComponents={tabs}
           onReady={handleReady}
         />
       </div>
