@@ -1,4 +1,5 @@
 //! One owning thread per SQLite connection, with one bounded result slot.
+use crate::edit::{self, EditRequest, EditResult};
 use crate::{
     SchemaSnapshot, SqliteDatabase, SqliteError,
     browse::{
@@ -7,6 +8,7 @@ use crate::{
     query::{self, QueryResult},
 };
 use serde::Serialize;
+use std::collections::VecDeque;
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicBool, Ordering},
@@ -15,6 +17,7 @@ use std::sync::{
 use std::time::Duration;
 
 const MAX_BROWSE_REQUESTS: usize = 8;
+const MAX_PENDING_CANCELS: usize = 16;
 type BrowseTask = Box<dyn FnOnce(&mut rusqlite::Connection) + Send>;
 
 #[derive(Debug, Clone, Serialize)]
@@ -29,6 +32,8 @@ struct State {
     sequence: u64,
     job: Option<JobSnapshot>,
     browse_requests: usize,
+    edit: Option<(String, Arc<AtomicBool>)>,
+    pending_edit_cancels: VecDeque<String>,
 }
 enum Request {
     Query(String, u64, bool),
@@ -53,6 +58,8 @@ impl ConnectionWorker {
             sequence: 0,
             job: None,
             browse_requests: 0,
+            edit: None,
+            pending_edit_cancels: VecDeque::new(),
         }));
         let cancel = Arc::new(AtomicBool::new(false));
         let thread_state = Arc::clone(&state);
@@ -235,17 +242,35 @@ impl ConnectionWorker {
         request: TableRequest,
         timeout_ms: u64,
     ) -> Result<ResultInfo, BrowseError> {
+        self.open_table_counting(request, timeout_ms, false)
+    }
+
+    pub fn open_table_counting(
+        &self,
+        request: TableRequest,
+        timeout_ms: u64,
+        count_rows: bool,
+    ) -> Result<ResultInfo, BrowseError> {
         let deadline = browse::deadline(timeout_ms)?;
         let sessions = Arc::clone(&self.sessions);
         let closed = Arc::clone(&self.closed);
         self.browse(move |connection| {
-            let (table, columns) =
+            let (mut table, columns) =
                 browse::read_table(connection, deadline, &closed, &closed, |connection| {
                     Table::open(connection, request)
                 })?;
+            if count_rows {
+                let count_deadline =
+                    deadline.min(std::time::Instant::now() + Duration::from_millis(300));
+                table.observed_row_count =
+                    browse::read_table(connection, count_deadline, &closed, &closed, |db| {
+                        table.count(db)
+                    })
+                    .ok();
+            }
             let mut sessions = sessions.lock().map_err(|_| browse_worker_error())?;
             browse::check_operation(deadline, &closed, &closed)?;
-            sessions.insert(columns, Source::Table(table))
+            sessions.insert(columns, Source::Table(Box::new(table)))
         })
     }
 
@@ -290,6 +315,102 @@ impl ConnectionWorker {
         Ok(())
     }
 
+    pub fn commit_edit(
+        &self,
+        session_id: &str,
+        operation_id: String,
+        request: EditRequest,
+        timeout_ms: u64,
+    ) -> Result<EditResult, BrowseError> {
+        let deadline = browse::deadline(timeout_ms)?;
+        validate_operation_id(&operation_id)?;
+        let session = self
+            .sessions
+            .lock()
+            .map_err(|_| browse_worker_error())?
+            .get(result_id(session_id)?)?;
+        if !matches!(session.source, Source::Table(_)) {
+            return Err(BrowseError::invalid(
+                "Only table sessions can commit changes",
+            ));
+        }
+        let (reply, receiver) = mpsc::sync_channel(1);
+        {
+            let mut state = self.state.lock().map_err(|_| browse_worker_error())?;
+            if state.closed {
+                return Err(BrowseError::expired());
+            }
+            if state.busy {
+                return Err(BrowseError::new(
+                    BrowseErrorKind::Busy,
+                    "SQLite connection is busy",
+                ));
+            }
+            if let Some(index) = state
+                .pending_edit_cancels
+                .iter()
+                .position(|id| id == &operation_id)
+            {
+                state.pending_edit_cancels.remove(index);
+                return Err(BrowseError::new(
+                    BrowseErrorKind::Cancelled,
+                    "Edit cancelled before it entered the worker queue",
+                ));
+            }
+            let shared = Arc::clone(&self.state);
+            let closed = Arc::clone(&self.closed);
+            let worker_sender = self.sender.clone();
+            let cancelled = Arc::new(AtomicBool::new(false));
+            let cancel_flag = Arc::clone(&cancelled);
+            let task = move |db: &mut rusqlite::Connection| {
+                let result = match &session.source {
+                    Source::Table(table) if !session.cancelled.load(Ordering::Relaxed) => table
+                        .editing
+                        .apply(db, request, deadline, &closed, &cancel_flag),
+                    _ => Err(BrowseError::expired()),
+                };
+                let needs_close = !db.is_autocommit()
+                    && matches!(&result, Err(error) if error.kind == BrowseErrorKind::EditUnknown);
+                if let Ok(mut state) = shared.lock() {
+                    state.busy = false;
+                    state.edit = None;
+                    if needs_close {
+                        state.closed = true;
+                        closed.store(true, Ordering::Relaxed);
+                        let _ = worker_sender.send(Request::Close(None));
+                    }
+                }
+                let _ = reply.send(result);
+            };
+            self.sender
+                .send(Request::Browse(Box::new(task)))
+                .map_err(|_| browse_worker_error())?;
+            state.busy = true;
+            state.edit = Some((operation_id, cancelled));
+        }
+        receiver.recv().map_err(|_| edit::unknown())?
+    }
+
+    pub fn cancel_edit(&self, operation_id: &str) -> Result<(), BrowseError> {
+        validate_operation_id(operation_id)?;
+        let mut state = self.state.lock().map_err(|_| browse_worker_error())?;
+        if let Some((id, cancel)) = &state.edit
+            && id == operation_id
+        {
+            cancel.store(true, Ordering::Relaxed);
+        } else if !state
+            .pending_edit_cancels
+            .iter()
+            .any(|id| id == operation_id)
+        {
+            if state.pending_edit_cancels.len() == MAX_PENDING_CANCELS {
+                state.pending_edit_cancels.pop_front();
+            }
+            state.pending_edit_cancels.push_back(operation_id.into());
+        }
+        Ok(())
+    }
+
     fn browse<T: Send + 'static>(
         &self,
         run: impl FnOnce(&mut rusqlite::Connection) -> Result<T, BrowseError> + Send + 'static,
@@ -328,6 +449,14 @@ fn result_id(id: &str) -> Result<u64, BrowseError> {
         .ok()
         .filter(|id| *id > 0)
         .ok_or_else(|| BrowseError::invalid("Invalid result session identifier"))
+}
+
+fn validate_operation_id(id: &str) -> Result<(), BrowseError> {
+    if id.is_empty() || id.len() > 64 || !id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
+    {
+        return Err(BrowseError::invalid("Invalid edit operation identifier"));
+    }
+    Ok(())
 }
 
 fn browse_worker_error() -> BrowseError {

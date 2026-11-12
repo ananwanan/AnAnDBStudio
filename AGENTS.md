@@ -172,6 +172,8 @@ For milestone closeout, add or update `docs/acceptance/MX.md` with environment, 
 
 ## 10. Milestone acceptance
 
-**M3 is implemented on `feat/m3-data-browser`.** See [M3 acceptance](docs/acceptance/M3.md) for verified and pending checks. M4 editing is a separate milestone.
+**M3 was merged into `dev` via PR #10.** See [M3 acceptance](docs/acceptance/M3.md) for verified and pending checks.
+
+**M4 is implemented on `feat/m4-data-editing` and awaits acceptance.** Keep grid drafts in memory and submit structured changes through the connection worker. Use one transaction per table, compare complete original rows by SQLite identity, and leave manual SQL transactions under the editor's control. Retain drafts when a save fails or its outcome is uncertain. See [M4 architecture](docs/architecture/M4-data-editing.md) and [M4 acceptance](docs/acceptance/M4.md) for limits and evidence. The v0.1.0 MVP target awaits sign-off.
 
 **Historical M2 milestone acceptance:** M2 was integrated into `dev` via PRs #8 and #9. See [M2 acceptance](docs/acceptance/M2.md) for reported and automated evidence.

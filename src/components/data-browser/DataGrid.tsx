@@ -1,15 +1,19 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
-  CellStyleModule, ColumnAutoSizeModule, InfiniteRowModelModule, RenderApiModule,
+  CellStyleModule, ColumnAutoSizeModule, CustomEditorModule, InfiniteRowModelModule, RenderApiModule,
   RowApiModule, ScrollApiModule, TooltipModule, themeQuartz,
   type CellClickedEvent, type ColDef, type GridApi,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Button } from "@/components/ui/button";
-import type { BrowseRow, ResultInfo } from "@/services/browse-protocol";
+import type { BrowseCell, BrowseRow, ResultInfo } from "@/services/browse-protocol";
+import { MAX_CHANGES, type WriteValue } from "@/services/edit-protocol";
 import { IpcError } from "@/services/ipc";
 import { exportSelection, readResultPage } from "@/services/sqlite-results";
 import { createResultDatasource } from "./result-datasource";
+import { completeRow, deleteRows, rowIdentity, updateCell } from "./change-set";
+import { ValueEditor } from "./ValueEditor";
+import type { TableEdits } from "./use-table-edits";
 import {
   MAX_SELECTION_CELLS, cellTooltip, clipboardCell, displayCell, serializeSelection,
   type Delimiter,
@@ -17,7 +21,7 @@ import {
 
 const modules = [
   InfiniteRowModelModule, ColumnAutoSizeModule, TooltipModule, CellStyleModule,
-  RenderApiModule, RowApiModule, ScrollApiModule,
+  RenderApiModule, RowApiModule, ScrollApiModule, CustomEditorModule,
 ];
 const gridTheme = themeQuartz.withParams({
   backgroundColor: "var(--background)",
@@ -51,9 +55,10 @@ interface DataGridProps {
   baseOffset?: number;
   onCancel: () => void;
   controls?: ReactNode;
+  edits?: TableEdits;
 }
 
-export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCancel, controls }: DataGridProps) {
+export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCancel, controls, edits }: DataGridProps) {
   const [api, setApi] = useState<GridApi<BrowseRow> | null>(null);
   const [pending, setPending] = useState(0);
   const [total, setTotal] = useState(info.rowCount);
@@ -64,22 +69,88 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [hasSelection, setHasSelection] = useState(false);
+  const [hasDeleteSelection, setHasDeleteSelection] = useState(false);
   const selection = useRef<Range | null>(null);
+  const deleteSelection = useRef<WeakRef<BrowseRow>[]>([]);
   const extendingWithMouse = useRef(false);
+  const rowIds = useMemo(() => new WeakMap<BrowseRow, string>(), [info]);
+  const editState = useRef(edits);
+  const canWrite = !!edits && !!info.editing && !info.editing.readOnlyReason && !edits.saving && !edits.blocked &&
+    !edits.uncertain && (!edits.draft || edits.draft.schemaVersion === info.editing.schemaVersion);
+  const writeState = useRef(canWrite);
+  useLayoutEffect(() => {
+    editState.current = edits;
+    writeState.current = canWrite;
+  });
+
+  const access = useMemo(() => {
+    const editing = info.editing;
+    const keys = new WeakMap<BrowseRow, string | null>();
+    const complete = new WeakMap<BrowseRow, boolean>();
+    function key(row: BrowseRow) {
+      if (!editing) return null;
+      if (!keys.has(row)) keys.set(row, rowIdentity(editing, row, rowIds.get(row) ?? null));
+      return keys.get(row) ?? null;
+    }
+    function change(row: BrowseRow) {
+      const id = key(row);
+      const draft = editState.current?.draft;
+      return id && draft && draft.schemaVersion === editing?.schemaVersion ? draft.entries.get(id) : undefined;
+    }
+    function delta(row: BrowseRow, index: number) {
+      const entry = change(row);
+      return entry?.kind === "update" ? entry.values.find(value => value.column === index)?.value : undefined;
+    }
+    function target(row: BrowseRow) {
+      const id = key(row);
+      if (!complete.has(row)) complete.set(row, completeRow(row));
+      return id && complete.get(row) ? { key: id, original: { rowId: rowIds.get(row) ?? null, cells: row } } : null;
+    }
+    return { change, delta, target };
+  }, [info.editing, rowIds]);
 
   const columnDefs = useMemo<ColDef<BrowseRow>[]>(() => [
     {
       colId: ROW_NUMBER, headerName: "#", width: 82, pinned: "left", lockPinned: true,
-      resizable: false, suppressAutoSize: true, valueGetter: ({ node }) => baseOffset + (node?.rowIndex ?? -1) + 1,
+      resizable: false, suppressAutoSize: true, valueGetter: ({ node, data }) => {
+        const number = baseOffset + (node?.rowIndex ?? -1) + 1;
+        return data && access.change(data)?.kind === "delete" ? `待删除 ${number}` : number;
+      },
+      cellClassRules: { "anandb-row-deleted": ({ data }) => !!data && access.change(data)?.kind === "delete" },
     },
     ...info.columns.map((name, index): ColDef<BrowseRow> => ({
       colId: String(index),
       headerName: name || '""',
       headerTooltip: name,
       width: 150,
-      valueGetter: ({ data }) => data?.[index] ? displayCell(data[index]) : "",
-      tooltipValueGetter: ({ data }) => data?.[index] ? cellTooltip(data[index]) : undefined,
+      valueGetter: ({ data }) => data ? access.delta(data, index) ?? data[index] : undefined,
+      cellRenderer: ({ data, value }: { data?: BrowseRow; value?: BrowseCell }) =>
+        value ? `${data && access.delta(data, index) ? "✎ " : ""}${displayCell(value)}` : "",
+      tooltipValueGetter: ({ data, value }: { data?: BrowseRow; value?: BrowseCell }) => {
+        if (!data || !value) return undefined;
+        if (info.editing && !info.editing.readOnlyReason && !access.target(data)) {
+          return `${cellTooltip(value)} · 原行含部分预览值，无法核对完整原值。`;
+        }
+        if (info.editing?.writable[index] === false) return `${cellTooltip(value)} · 生成列或隐藏列，只读。`;
+        if (value.type === "textBytes") return `${cellTooltip(value)} · 无效 UTF-8，单元格只读。`;
+        return `${access.delta(data, index) ? "待修改 · " : ""}${cellTooltip(value)}`;
+      },
+      editable: ({ data }) => !!data && writeState.current && !!info.editing?.writable[index] &&
+        data[index].type !== "textBytes" && !!access.target(data) && access.change(data)?.kind !== "delete",
+      cellEditor: ValueEditor,
+      cellEditorPopup: true,
+      cellEditorParams: ({ data }: { data: BrowseRow }) => ({
+        stage: (value: WriteValue) => {
+          const target = access.target(data);
+          if (!target || !writeState.current) throw new Error("此行当前无法编辑。");
+          editState.current?.change(info, set => updateCell(set, target.key, target.original, { column: index, value }));
+        },
+      }),
+      suppressKeyboardEvent: ({ event, editing }) => editing || event.isComposing || event.keyCode === 229 ||
+        (!event.ctrlKey && !event.metaKey && !event.altKey && (event.key.length === 1 || event.key === "Backspace" || event.key === "Delete")),
       cellClassRules: {
+        "anandb-cell-modified": ({ data }) => !!data && !!access.delta(data, index),
+        "anandb-row-deleted": ({ data }) => !!data && access.change(data)?.kind === "delete",
         "anandb-cell-selected": ({ node }) => {
           if (!selection.current || node.rowIndex === null) return false;
           const { top, bottom, left, right } = bounds(selection.current);
@@ -87,12 +158,18 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
         },
       },
     })),
-  ], [info.columns, baseOffset]);
+  ], [info, baseOffset, access]);
+
+  useEffect(() => { api?.refreshCells({ force: true }); }, [api, edits?.draft, canWrite]);
 
   useEffect(() => {
     if (!api) return;
     const source = createResultDatasource(
-      (offset, limit, signal) => readResultPage(connectionId, info, baseOffset + offset, limit, signal),
+      async (offset, limit, signal) => {
+        const page = await readResultPage(connectionId, info, baseOffset + offset, limit, signal);
+        page.rowIds?.forEach((id, index) => rowIds.set(page.rows[index], id));
+        return page;
+      },
       setPending,
       (offset, page) => {
         if (offset === 0) setEmpty(page.rows.length === 0);
@@ -112,10 +189,21 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
     );
     api.setGridOption("datasource", source);
     return () => source.destroy?.();
-  }, [api, connectionId, info, baseOffset]);
+  }, [api, connectionId, info, baseOffset, rowIds]);
 
   function choose(point: Point, extend: boolean) {
     selection.current = { start: extend && selection.current ? selection.current.start : point, end: point };
+    const { top, bottom } = bounds(selection.current);
+    const rows: WeakRef<BrowseRow>[] = [];
+    if (info.editing && api && bottom - top < MAX_CHANGES) {
+      for (let index = top; index <= bottom; index++) {
+        const data = api.getDisplayedRowAtIndex(index)?.data;
+        if (!data || !access.target(data)) break;
+        rows.push(new WeakRef(data));
+      }
+    }
+    deleteSelection.current = rows.length === bottom - top + 1 ? rows : [];
+    setHasDeleteSelection(deleteSelection.current.length > 0);
     setHasSelection(true);
     setNotice("");
     api?.refreshCells({ force: true });
@@ -144,7 +232,7 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
     for (let i = top; i <= bottom; i++) {
       const data = api.getDisplayedRowAtIndex(i)?.data;
       if (!data) throw new Error("选区有未加载的数据，请缩小选区。");
-      rows.push(data.slice(left, right + 1));
+      rows.push(data.slice(left, right + 1).map((cell, index) => access.delta(data, left + index) ?? cell));
     }
     return rows;
   }
@@ -176,6 +264,8 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
   }
 
   function handleKeys(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.nativeEvent.isComposing || event.keyCode === 229 ||
+      (event.target instanceof Element && event.target.closest("textarea, input, select, [data-cell-editor]"))) return;
     const focus = api?.getFocusedCell();
     if (!api || !focus || focus.column.getColId() === ROW_NUMBER) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c") {
@@ -197,6 +287,27 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
     }
   }
 
+  function markDeletion() {
+    try {
+      if (!api || !edits || !canWrite || !selection.current) return;
+      const { top, bottom } = bounds(selection.current);
+      const targets = new Map<string, NonNullable<ReturnType<typeof access.target>>>();
+      for (let i = top; i <= bottom; i++) {
+        const row = api.getDisplayedRowAtIndex(i)?.data;
+        const target = row && access.target(row);
+        if (!target || deleteSelection.current[i - top]?.deref() !== row) {
+          setHasDeleteSelection(false);
+          throw new Error("选区数据已刷新或不完整，请重新选择要删除的行。");
+        }
+        targets.set(target.key, target);
+      }
+      edits.change(info, set => deleteRows(set, [...targets.values()]));
+      setNotice(`已标记 ${targets.size} 行待删除。`);
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : "无法标记删除。");
+    }
+  }
+
   if (expired) return <p role="alert" className="p-3 text-xs text-destructive">{error}</p>;
 
   return (
@@ -207,11 +318,13 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
         <Button size="xs" variant="ghost" disabled={!hasSelection} onClick={() => void copy()}>复制</Button>
         <Button size="xs" variant="ghost" disabled={!hasSelection || saving} onClick={() => void download("\t")}>导出 TSV</Button>
         <Button size="xs" variant="ghost" disabled={!hasSelection || saving} onClick={() => void download(",")}>导出 CSV</Button>
+        {edits && <Button size="xs" variant="outline" disabled={!hasDeleteSelection || !canWrite}
+          title="选择最多 256 行具有完整原值的数据" onClick={markDeletion}>删除选中行</Button>}
         {pending > 0 && <Button size="xs" variant="outline" onClick={onCancel}>取消加载</Button>}
         {notice && <span role="status" className="text-xs text-muted-foreground">{notice}</span>}
       </div>
       {error && <p role="alert" className="border-b px-2 py-1 text-xs text-destructive">{error}</p>}
-      <div className="relative min-h-0 min-w-0 flex-1" aria-label="只读数据表格"
+      <div className="relative min-h-0 min-w-0 flex-1" aria-label={canWrite ? "可编辑数据表格" : "只读数据表格"}
         onMouseDownCapture={event => { extendingWithMouse.current = event.shiftKey; }}
         onKeyDownCapture={handleKeys}>
         <AgGridReact<BrowseRow>
@@ -231,6 +344,8 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
           suppressCellFocus={false}
           suppressDragLeaveHidesColumns
           suppressNoRowsOverlay
+          stopEditingWhenCellsLoseFocus
+          popupParent={document.body}
           onGridReady={event => setApi(event.api)}
           onCellClicked={clickCell}
           onCellFocused={event => {
@@ -249,7 +364,8 @@ export function DataGrid({ connectionId, info, pageSize, baseOffset = 0, onCance
         </div>}
       </div>
       <footer role="status" className="shrink-0 border-t bg-card px-2 py-1 text-xs text-muted-foreground">
-        {pending ? "正在加载…" : "只读"} · 已缓存 {loaded} 行 · 每页 {pageSize} 行{total === null ? "" : ` · 共 ${total} 行`}
+        {pending ? "正在加载…" : canWrite ? "双击或 F2 编辑" : "只读"} · 已缓存 {loaded} 行 · 每页 {pageSize} 行
+        {total !== null ? ` · 共 ${total} 行` : info.observedRowCount !== undefined ? ` · 刷新时共 ${info.observedRowCount} 行` : ""}
       </footer>
     </>
   );

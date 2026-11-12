@@ -19,6 +19,11 @@
     "allow-open-sqlite-table-result",
     "allow-get-sqlite-result-page",
     "allow-close-sqlite-result",
-    "allow-export-sqlite-selection"
+    "allow-export-sqlite-selection",
+    "allow-commit-sqlite-edit",
+    "allow-cancel-sqlite-edit",
+    "core:window:allow-destroy",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
   ]
 }

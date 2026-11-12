@@ -1,5 +1,6 @@
 import { decodeResultInfo, decodeResultPage } from "./browse-protocol";
 import { decodeQueryId, decodeQueryJob } from "./query-protocol";
+import { decodeEditResult } from "./edit-protocol";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -31,6 +32,15 @@ export type BackendErrorCode =
     | "RESULT_EXPIRED"
     | "RESULT_CANCELLED"
     | "RESULT_TIMED_OUT"
+    | "EDIT_READ_ONLY"
+    | "EDIT_TRANSACTION_OPEN"
+    | "EDIT_SCHEMA_CHANGED"
+    | "EDIT_ROW_MISSING"
+    | "EDIT_ROW_CHANGED"
+    | "EDIT_AFFECTED_ROWS"
+    | "EDIT_CONSTRAINT"
+    | "EDIT_BUSY"
+    | "EDIT_UNKNOWN"
     | "EXPORT_FAILED";
 
 export type IpcErrorCode =
@@ -53,6 +63,15 @@ const BACKEND_ERROR_CODES: ReadonlySet<string> = new Set([
     "RESULT_EXPIRED",
     "RESULT_CANCELLED",
     "RESULT_TIMED_OUT",
+    "EDIT_READ_ONLY",
+    "EDIT_TRANSACTION_OPEN",
+    "EDIT_SCHEMA_CHANGED",
+    "EDIT_ROW_MISSING",
+    "EDIT_ROW_CHANGED",
+    "EDIT_AFFECTED_ROWS",
+    "EDIT_CONSTRAINT",
+    "EDIT_BUSY",
+    "EDIT_UNKNOWN",
     "EXPORT_FAILED",
 ]);
 
@@ -298,6 +317,8 @@ const RESPONSE_DECODERS: {
     open_sqlite_table_result: (value) => decodeQueryResponse(() => decodeResultInfo(value)),
     get_sqlite_result_page: (value) => decodeQueryResponse(() => decodeResultPage(value)),
     close_sqlite_result: decodeVoid,
+    commit_sqlite_edit: (value) => decodeQueryResponse(() => decodeEditResult(value)),
+    cancel_sqlite_edit: decodeVoid,
     export_sqlite_selection: (value) => {
         if (typeof value !== "boolean") throw new IpcError("INVALID_RESPONSE", "Invalid selection export response");
         return value;

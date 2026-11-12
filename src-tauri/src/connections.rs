@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use anandb_driver_sqlite::browse::{BrowseError, BrowseErrorKind, Page, ResultInfo, TableRequest};
+use anandb_driver_sqlite::edit::{EditRequest, EditResult};
 use anandb_driver_sqlite::{OpenMode, SchemaSnapshot, SqliteDatabase, SqliteError};
 use serde::Serialize;
 
@@ -152,9 +153,10 @@ impl ConnectionManager {
         id: String,
         request: TableRequest,
         timeout_ms: u64,
+        count_rows: bool,
     ) -> Result<ResultInfo, AppError> {
         self.worker(&id)?
-            .open_table(request, timeout_ms)
+            .open_table_counting(request, timeout_ms, count_rows)
             .map_err(browse_error)
     }
 
@@ -174,6 +176,25 @@ impl ConnectionManager {
     pub fn close_result(&self, id: String, session_id: String) -> Result<(), AppError> {
         self.worker(&id)?
             .close_result(&session_id)
+            .map_err(browse_error)
+    }
+
+    pub fn commit_edit(
+        &self,
+        id: String,
+        session_id: String,
+        operation_id: String,
+        request: EditRequest,
+        timeout_ms: u64,
+    ) -> Result<EditResult, AppError> {
+        self.worker(&id)?
+            .commit_edit(&session_id, operation_id, request, timeout_ms)
+            .map_err(browse_error)
+    }
+
+    pub fn cancel_edit(&self, id: String, operation_id: String) -> Result<(), AppError> {
+        self.worker(&id)?
+            .cancel_edit(&operation_id)
             .map_err(browse_error)
     }
 
@@ -215,6 +236,15 @@ fn browse_error(error: BrowseError) -> AppError {
         BrowseErrorKind::Cancelled => AppErrorCode::ResultCancelled,
         BrowseErrorKind::TimedOut => AppErrorCode::ResultTimedOut,
         BrowseErrorKind::Failed => AppErrorCode::QueryFailed,
+        BrowseErrorKind::EditReadOnly => AppErrorCode::EditReadOnly,
+        BrowseErrorKind::EditTransactionOpen => AppErrorCode::EditTransactionOpen,
+        BrowseErrorKind::EditSchemaChanged => AppErrorCode::EditSchemaChanged,
+        BrowseErrorKind::EditRowMissing => AppErrorCode::EditRowMissing,
+        BrowseErrorKind::EditRowChanged => AppErrorCode::EditRowChanged,
+        BrowseErrorKind::EditAffectedRows => AppErrorCode::EditAffectedRows,
+        BrowseErrorKind::EditConstraint => AppErrorCode::EditConstraint,
+        BrowseErrorKind::EditBusy => AppErrorCode::EditBusy,
+        BrowseErrorKind::EditUnknown => AppErrorCode::EditUnknown,
     };
     AppError::new(code, error.message)
 }
@@ -394,5 +424,51 @@ mod tests {
             AppErrorCode::ConnectionNotFound
         );
         registry.close(second.id).unwrap();
+    }
+
+    #[test]
+    fn edits_validate_connection_ownership_and_session_lifetime() {
+        use anandb_driver_sqlite::edit::Change;
+
+        let fixture = Fixture::new();
+        let registry = ConnectionManager::default();
+        let first = registry.open_existing(fixture.path(), false).unwrap();
+        let second = registry.open_existing(fixture.path(), false).unwrap();
+        let info = registry
+            .open_table(
+                first.id.clone(),
+                TableRequest {
+                    schema: "main".into(),
+                    table: "sample".into(),
+                    sort: None,
+                    filter: None,
+                },
+                5000,
+                false,
+            )
+            .unwrap();
+        let request = || EditRequest {
+            schema_version: info.editing.as_ref().unwrap().schema_version,
+            changes: vec![Change::Insert { values: vec![] }],
+        };
+        let save =
+            |id: String| registry.commit_edit(id, info.id.clone(), "op".into(), request(), 5000);
+        assert_eq!(
+            save(second.id).unwrap_err().code,
+            AppErrorCode::ResultExpired
+        );
+        assert_eq!(save(first.id.clone()).unwrap().inserted, 1);
+        registry
+            .close_result(first.id.clone(), info.id.clone())
+            .unwrap();
+        assert_eq!(
+            save(first.id.clone()).unwrap_err().code,
+            AppErrorCode::ResultExpired
+        );
+        registry.close(first.id.clone()).unwrap();
+        assert_eq!(
+            save(first.id).unwrap_err().code,
+            AppErrorCode::ConnectionNotFound
+        );
     }
 }

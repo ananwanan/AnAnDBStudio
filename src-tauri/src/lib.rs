@@ -23,6 +23,8 @@ pub fn run() {
             commands::connections::get_sqlite_result_page,
             commands::connections::close_sqlite_result,
             commands::export::export_sqlite_selection,
+            commands::connections::commit_sqlite_edit,
+            commands::connections::cancel_sqlite_edit,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

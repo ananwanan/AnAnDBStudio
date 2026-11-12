@@ -1,6 +1,6 @@
 mod sessions;
 mod snapshot;
-mod table;
+pub(crate) mod table;
 
 use std::sync::{
     Arc,
@@ -30,6 +30,15 @@ pub enum BrowseErrorKind {
     Cancelled,
     TimedOut,
     Failed,
+    EditReadOnly,
+    EditTransactionOpen,
+    EditSchemaChanged,
+    EditRowMissing,
+    EditRowChanged,
+    EditAffectedRows,
+    EditConstraint,
+    EditBusy,
+    EditUnknown,
 }
 
 #[derive(Debug)]
@@ -68,8 +77,8 @@ impl From<rusqlite::Error> for BrowseError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub enum BrowseCell {
     Null,
     Integer { value: String },
@@ -89,6 +98,10 @@ pub struct ResultInfo {
     pub columns: Vec<String>,
     pub max_page_size: usize,
     pub row_count: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub editing: Option<crate::edit::EditInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub observed_row_count: Option<usize>,
 }
 
 #[derive(Debug, Serialize)]
@@ -96,6 +109,8 @@ pub struct ResultInfo {
 pub struct Page {
     pub rows: Vec<Vec<BrowseCell>>,
     pub end: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub row_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -147,7 +162,7 @@ pub enum FilterValue {
 }
 
 pub(crate) enum Source {
-    Table(Table),
+    Table(Box<Table>),
     Snapshot(snapshot::Snapshot),
 }
 
@@ -166,13 +181,23 @@ impl Session {
         };
         // Each cell has at most 128 bytes of fixed JSON overhead (including numbers).
         let max_page_size =
-            MAX_PAGE_ROWS.min(PAGE_BYTES / (columns.len() * 128 + ROW_CONTENT_BYTES + 8));
+            MAX_PAGE_ROWS.min(PAGE_BYTES / (columns.len() * 128 + ROW_CONTENT_BYTES + 32));
+        let editing = match &source {
+            Source::Table(table) => Some(table.editing.info.clone()),
+            Source::Snapshot(_) => None,
+        };
+        let observed_row_count = match &source {
+            Source::Table(table) => table.observed_row_count,
+            Source::Snapshot(_) => None,
+        };
         Ok(Self {
             info: ResultInfo {
                 id,
                 columns,
                 max_page_size,
                 row_count,
+                editing,
+                observed_row_count,
             },
             source,
             cancelled: Arc::new(AtomicBool::new(false)),

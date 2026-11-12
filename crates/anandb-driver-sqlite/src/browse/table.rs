@@ -1,3 +1,4 @@
+use crate::edit::Target;
 use rusqlite::{Connection, OptionalExtension, params, types::Value};
 
 use super::{
@@ -8,9 +9,12 @@ pub(crate) struct Table {
     sql: String,
     filter_value: Option<Value>,
     schema_version: i64,
+    pub(crate) editing: Target,
+    count_sql: String,
+    pub(crate) observed_row_count: Option<usize>,
 }
 
-fn identifier(name: &str) -> String {
+pub(crate) fn identifier(name: &str) -> String {
     format!("\"{}\"", name.replace('"', "\"\""))
 }
 
@@ -18,11 +22,11 @@ fn field(name: &str) -> String {
     format!("source.{}", identifier(name))
 }
 
-fn schema_version(connection: &Connection) -> rusqlite::Result<i64> {
+pub(crate) fn schema_version(connection: &Connection) -> rusqlite::Result<i64> {
     connection.query_row("PRAGMA main.schema_version", [], |row| row.get(0))
 }
 
-fn bind(value: FilterValue) -> Result<Value, BrowseError> {
+pub(crate) fn bind(value: FilterValue) -> Result<Value, BrowseError> {
     const MAX_INPUT_BYTES: usize = 16 * 1024;
     let invalid = || BrowseError::invalid("Invalid typed filter value or value exceeds 16 KiB");
     match value {
@@ -106,6 +110,7 @@ impl Table {
             columns.push(name);
         }
         validate_columns(&columns)?;
+        let editing = Target::inspect(connection, &table, &columns, version, without_rowid)?;
 
         let require_column = |column: &str| {
             if columns.iter().any(|name| name == column) {
@@ -116,15 +121,11 @@ impl Table {
                 ))
             }
         };
-        let mut sql = format!(
-            "SELECT {} FROM main.{} AS source",
-            columns
-                .iter()
-                .map(|name| field(name))
-                .collect::<Vec<_>>()
-                .join(", "),
-            identifier(&table),
-        );
+        let mut fields: Vec<_> = columns.iter().map(|name| field(name)).collect();
+        if let Some(alias) = editing.implicit_rowid() {
+            fields.push(field(alias));
+        }
+        let mut source = format!(" FROM main.{} AS source", identifier(&table));
         let mut filter_value = None;
         if let Some(filter) = filter {
             let column = require_column(&filter.column)?;
@@ -170,9 +171,10 @@ impl Table {
                     }
                 }
             };
-            sql.push_str(" WHERE ");
-            sql.push_str(&predicate);
+            source.push_str(" WHERE ");
+            source.push_str(&predicate);
         }
+        let mut sql = format!("SELECT {}{source}", fields.join(", "));
 
         let mut order = Vec::new();
         if let Some(sort) = &sort {
@@ -237,9 +239,25 @@ impl Table {
                 sql,
                 filter_value,
                 schema_version: version,
+                editing,
+                count_sql: format!("SELECT count(*){source}"),
+                observed_row_count: None,
             },
             columns,
         ))
+    }
+
+    pub(crate) fn count(&self, connection: &Connection) -> Result<usize, BrowseError> {
+        if schema_version(connection)? != self.schema_version {
+            return Err(BrowseError::expired());
+        }
+        let mut statement = connection.prepare(&self.count_sql)?;
+        let count: i64 = match &self.filter_value {
+            Some(value) => statement.query_row([value], |row| row.get(0))?,
+            None => statement.query_row([], |row| row.get(0))?,
+        };
+        usize::try_from(count)
+            .map_err(|_| BrowseError::failed("SQLite row count is outside the result limits"))
     }
 
     pub(crate) fn page(
@@ -263,6 +281,10 @@ impl Table {
         let mut page = Page {
             rows: Vec::with_capacity(limit),
             end: true,
+            row_ids: self
+                .editing
+                .implicit_rowid()
+                .map(|_| Vec::with_capacity(limit)),
         };
         while let Some(row) = rows.next()? {
             check()?;
@@ -271,6 +293,9 @@ impl Table {
                 break;
             }
             page.rows.push(read_row(row, columns.len())?);
+            if let Some(ids) = &mut page.row_ids {
+                ids.push(row.get::<_, i64>(columns.len())?.to_string());
+            }
         }
         Ok(page)
     }

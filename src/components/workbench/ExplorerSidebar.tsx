@@ -1,14 +1,14 @@
 import { useState } from "react";
 import {
   ChevronRight, Database, FolderTree, KeyRound, LoaderCircle,
-  Plus, RefreshCw, Table2, Trash2,
+  LockKeyhole, LockKeyholeOpen, Plus, RefreshCw, Table2, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { SqliteSchemaObject, SqliteSchemaObjectKind } from "@/services/ipc-contract";
 import {
   dismissSqliteError, refreshSqliteSchema, removeSqliteConnection,
-  selectSqliteConnection, useSqliteWorkspace,
+  selectSqliteConnection, switchSqliteConnectionMode, useSqliteWorkspace,
 } from "@/stores/sqlite-workspace";
 
 const GROUPS: ReadonlyArray<{ kind: SqliteSchemaObjectKind; title: string }> = [
@@ -124,6 +124,12 @@ export function ExplorerSidebar({ onNewConnection, onOpenTable }: ExplorerSideba
                   disabled={workspace.closingIds.includes(connection.id)}
                   onClick={() => void refreshSqliteSchema(connection.id)}
                 ><RefreshCw className="size-3.5" /></Button>
+                <Button size="icon-xs" variant="ghost"
+                  title={connection.readOnly ? "以读写模式重新打开" : "以只读模式重新打开"}
+                  aria-label={connection.readOnly ? "以读写模式重新打开" : "以只读模式重新打开"}
+                  disabled={workspace.closingIds.includes(connection.id)}
+                  onClick={() => void switchSqliteConnectionMode(connection.id).catch(() => undefined)}
+                >{connection.readOnly ? <LockKeyholeOpen className="size-3.5" /> : <LockKeyhole className="size-3.5" />}</Button>
                 <Button
                   size="icon-xs" variant="ghost" title="关闭连接" aria-label={`关闭 ${connection.path}`}
                   disabled={workspace.closingIds.includes(connection.id)}

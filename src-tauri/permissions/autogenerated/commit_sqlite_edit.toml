@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-commit-sqlite-edit"
+description = "Enables the commit_sqlite_edit command without any pre-configured scope."
+commands.allow = ["commit_sqlite_edit"]
+
+[[permission]]
+identifier = "deny-commit-sqlite-edit"
+description = "Denies the commit_sqlite_edit command without any pre-configured scope."
+commands.deny = ["commit_sqlite_edit"]

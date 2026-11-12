@@ -182,6 +182,14 @@
 .anandb-cell-selected {
   background-color: color-mix(in oklab, var(--primary) 18%, var(--background));
 }
+.anandb-cell-modified {
+  font-weight: 600;
+  box-shadow: inset 2px 0 var(--primary);
+}
+.anandb-row-deleted {
+  text-decoration: line-through;
+  background-color: color-mix(in oklab, var(--destructive) 12%, var(--background));
+}
 
 .dark .ag-root-wrapper {
   --ag-browser-color-scheme: dark;

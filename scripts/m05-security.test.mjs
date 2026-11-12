@@ -23,6 +23,8 @@ const commands = [
     "get_sqlite_result_page",
     "close_sqlite_result",
     "export_sqlite_selection",
+    "commit_sqlite_edit",
+    "cancel_sqlite_edit",
 ];
 
 test("only approved IPC commands are registered", () => {
@@ -51,7 +53,7 @@ test("command permissions remain restricted", () => {
 
     const expected = commands
         .map((command) => `allow-${command.replaceAll("_", "-")}`)
-        .concat("dialog:allow-open")
+        .concat("dialog:allow-open", "core:window:allow-destroy", "core:event:allow-listen", "core:event:allow-unlisten")
         .sort();
 
     assert.deepEqual(capability.windows, ["main"]);

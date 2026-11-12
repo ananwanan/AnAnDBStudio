@@ -18,9 +18,9 @@ async function whenConnectionAvailable<T>(run: () => Promise<T>, signal: AbortSi
   }
 }
 
-export function openTable(connectionId: string, request: TableRequest, signal: AbortSignal) {
+export function openTable(connectionId: string, request: TableRequest, signal: AbortSignal, countRows = false) {
   return whenConnectionAvailable(
-    () => invokeIpc("open_sqlite_table_result", { id: connectionId, request, timeoutMs: TIMEOUT_MS }),
+    () => invokeIpc("open_sqlite_table_result", { id: connectionId, request, timeoutMs: TIMEOUT_MS, ...(countRows ? { countRows } : {}) }),
     signal,
   );
 }
@@ -31,6 +31,7 @@ export async function readResultPage(connectionId: string, info: ResultInfo, off
   }), signal);
   signal.throwIfAborted();
   if (page.rows.some(row => row.length !== info.columns.length) ||
+    Boolean(page.rowIds) !== Boolean(info.editing?.rowIdAlias) ||
     page.rows.length > limit || (!page.end && page.rows.length !== limit)) {
     throw new IpcError("INVALID_RESPONSE", "Result page does not match the requested dimensions");
   }

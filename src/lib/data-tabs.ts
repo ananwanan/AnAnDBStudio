@@ -2,6 +2,7 @@ import type { ResultInfo } from "@/services/browse-protocol";
 import { releaseResult } from "@/services/sqlite-results";
 import type { DockApi } from "./dock-layout";
 import { isSqlPanelId } from "./sql-tabs";
+import { hasPendingEdits, protectEdits } from "./edit-lifecycle";
 
 const PREFIX = "data-result-";
 const MAX_DATA_TABS = 12;
@@ -12,6 +13,16 @@ export type DataTabSource =
 
 export function isDataTab(id: string) {
   return id.startsWith(PREFIX);
+}
+
+export function closeDataTab(api: DockApi, id: string) {
+  const close = () => {
+    const panel = api.getPanel(id);
+    if (panel) api.removePanel(panel);
+  };
+  const include = (guard: { id: string }) => guard.id === id;
+  if (!hasPendingEdits(include)) close();
+  else void protectEdits("关闭数据标签前处理修改", include).then(allow => { if (allow) close(); });
 }
 
 export function openDataTab(api: DockApi, source: DataTabSource, title: string) {
@@ -35,7 +46,7 @@ export function openDataTab(api: DockApi, source: DataTabSource, title: string) 
     ? active : api.panels.find(panel => isSqlPanelId(panel.id) || isDataTab(panel.id)) ??
       api.getPanel("welcome") ?? api.getPanel("results") ?? api.getPanel("explorer");
   api.addPanel({
-    id, title, component: "data-result", params: { source }, renderer: "always",
+    id, title, component: "data-result", tabComponent: "data-tab", params: { source }, renderer: "always",
     ...(reference ? { position: { referencePanel: reference.id, direction: reference.id === "explorer" ? "right" : "within" } } : {}),
   });
   if (source.kind === "query") {
