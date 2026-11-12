@@ -14,6 +14,8 @@ fn main() {
             "get_sqlite_result_page",
             "close_sqlite_result",
             "export_sqlite_selection",
+            "commit_sqlite_edit",
+            "cancel_sqlite_edit",
         ]),
     ))
     .expect("failed to generate Tauri application permissions");

@@ -8,6 +8,7 @@ use crate::error::{AppError, AppErrorCode};
 use anandb_driver_sqlite::{
     SchemaSnapshot,
     browse::{Page, ResultInfo, TableRequest},
+    edit::{EditRequest, EditResult, MAX_EDIT_BYTES},
 };
 
 #[tauri::command]
@@ -91,11 +92,14 @@ pub async fn open_sqlite_table_result(
     id: String,
     request: TableRequest,
     timeout_ms: u64,
+    count_rows: Option<bool>,
 ) -> Result<ResultInfo, AppError> {
     let manager = Arc::clone(manager.inner());
-    tauri::async_runtime::spawn_blocking(move || manager.open_table(id, request, timeout_ms))
-        .await
-        .map_err(|_| worker_error())?
+    tauri::async_runtime::spawn_blocking(move || {
+        manager.open_table(id, request, timeout_ms, count_rows.unwrap_or(false))
+    })
+    .await
+    .map_err(|_| worker_error())?
 }
 
 #[tauri::command]
@@ -122,4 +126,47 @@ pub async fn close_sqlite_result(
     session_id: String,
 ) -> Result<(), AppError> {
     manager.close_result(id, session_id)
+}
+
+#[tauri::command]
+pub async fn commit_sqlite_edit(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    session_id: String,
+    operation_id: String,
+    payload: String,
+    timeout_ms: u64,
+) -> Result<EditResult, AppError> {
+    if payload.len() > MAX_EDIT_BYTES {
+        return Err(AppError::new(
+            AppErrorCode::InvalidArgument,
+            "Edit payload exceeds 1 MiB",
+        ));
+    }
+    let manager = Arc::clone(manager.inner());
+    tauri::async_runtime::spawn_blocking(move || {
+        let request: EditRequest = serde_json::from_str(&payload).map_err(|_| {
+            AppError::new(
+                AppErrorCode::InvalidArgument,
+                "Invalid structured edit payload",
+            )
+        })?;
+        manager.commit_edit(id, session_id, operation_id, request, timeout_ms)
+    })
+    .await
+    .map_err(|_| {
+        AppError::new(
+            AppErrorCode::EditUnknown,
+            "Commit outcome is uncertain. Verify the database before retrying",
+        )
+    })?
+}
+
+#[tauri::command]
+pub async fn cancel_sqlite_edit(
+    manager: State<'_, Arc<ConnectionManager>>,
+    id: String,
+    operation_id: String,
+) -> Result<(), AppError> {
+    manager.cancel_edit(id, operation_id)
 }

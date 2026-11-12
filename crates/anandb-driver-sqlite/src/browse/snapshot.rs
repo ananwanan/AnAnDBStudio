@@ -99,6 +99,7 @@ impl Snapshot {
             }
         }
         Ok(Page {
+            row_ids: None,
             rows,
             end: end == self.rows,
         })
