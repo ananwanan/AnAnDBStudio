@@ -9,7 +9,7 @@
 
 AnAnDB Studio（仓库：`AnAnDBStudio`）定位为类似 **Navicat / DBeaver** 的专业数据库管理器，采用 **Tauri 2 + Rust + React + TypeScript** 构建。**首个目标是提供可靠、可用于实际工作的 SQLite 3 管理体验**，随后扩展 PostgreSQL、MySQL 与 MariaDB。
 
-> **项目状态（2026-11-11）：M2 SQL IDE 已通过维护者验收并合入 `dev`（[PR #9](https://github.com/ananwanan/AnAnDBStudio/pull/9)）。** M0/M1/M2.1–M2.4 均已集成。M2 包含连接级工作线程、多语句执行、逐语句结果预览、错误定位、取消/超时、会话查询历史和快捷键。维护者确认人工验证通过；逐平台的原始桌面验证日志未随报告提供。自动化证据见 [M2 验收记录](docs/acceptance/M2.md)；合并时 Windows/Linux PR CI 尚在运行，结果以 [GitHub Actions](https://github.com/ananwanan/AnAnDBStudio/actions/runs/42947979935) 为准。**M3 — Data Browser** 已在 `feat/m3-data-browser` 实现，平台验证见 [M3 验收记录](docs/acceptance/M3.md)。尚未发布 `v0.1.0`。
+> **项目状态（2026-11-13）**：M0–M3 已合入 `dev`。M4 SQLite 事务化数据编辑在 `feat/m4-data-editing` 待维护者验收。v0.1.0 仍为 MVP 目标。 [M2 验收](docs/acceptance/M2.md) · [M3 验收](docs/acceptance/M3.md) · [M4 验收](docs/acceptance/M4.md)
 
 ## Product goals / 产品目标
 
@@ -139,7 +139,15 @@ Every milestone requires documented acceptance evidence. **A milestone is not co
 | **M3.4** | Table browsing, filtering and sorting | Stable, correct navigation with backend-aware filter/sort semantics |
 | **M3.5** | SQLite value fidelity, copy/export-selection and cross-platform acceptance | Preserve NULL, BLOB, 64-bit integers and duplicate column labels without lossy conversion |
 
-M3 在功能分支提供只读表浏览、分页 SQL 结果、虚拟网格、排序和筛选，以及选区复制与 CSV/TSV 导出。M2 的 200 行预览仍是默认执行路径；勾选「保留完整结果」可在原查询执行时生成分页结果。参阅 [M3 开发路线](docs/roadmap/M3.md)、[架构与 IPC](docs/architecture/M3-data-browser.md)及[平台验收记录](docs/acceptance/M3.md)。可编辑单元格、修改集、提交与回滚属于 M4。
+M3 提供表浏览、分页 SQL 结果、虚拟网格、排序和筛选，以及选区复制与 CSV/TSV 导出。SQL 执行默认显示至多 200 行预览。勾选「保留完整结果」可在原查询执行时生成分页结果。 [M3 开发路线](docs/roadmap/M3.md) · [架构与 IPC](docs/architecture/M3-data-browser.md) · [平台验收](docs/acceptance/M3.md)
+
+### M4 SQLite 数据编辑
+
+1. 使用读写模式连接 SQLite，在 Explorer 双击普通表。双击单元格或按 F2 开始编辑，Enter 暂存，Esc 取消。
+2. 用「新增行」设置各列的类型和值。用「删除选中行」标记原有行，或在「查看修改集」中取消待新增行。
+3. 检查修改集里的行身份、原值、新值和删除数量，再选择「保存修改」。整批成功后会重新读取表。失败会保留草稿，便于核对并修正。
+
+每张表单独提交，每批最多 256 行和 1 MiB。只读连接、任意 SQL 结果、没有唯一行身份的表，以及包含截断预览的行保留只读。已提交的写入由 SQLite 持久保存。「放弃修改」仅清除当前草稿。 [M4 开发路线](docs/roadmap/M4.md) · [架构与限制](docs/architecture/M4-data-editing.md) · [平台验收](docs/acceptance/M4.md)
 
 ### M0 breakdown / 第一阶段拆分
 
